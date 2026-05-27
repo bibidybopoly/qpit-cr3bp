@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# Data and results — too big for git, regenerate as needed
+data/
+results/
+*.npy
+*.npz
+*.pkl
+*.h5
+*.hdf5
+
+# Papers folder — copyrighted, don't commit
+papers/
+
+# Generated figures (you may want to track final versions; for now exclude)
+figures/*.png
+figures/*.pdf
+figures/*.svg
+
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+logs/
+
+# Environment files with secrets
+.env
+*.key
+
+# Titan / SLURM output
+*.out
+*.err
+slurm-*
