@@ -53,26 +53,34 @@
 
 
 \*\*Worked on:\*\* 
+
 \- Further planning, math learning, and environment setup
 
 
 \*\*Setup completed:\*\*
+
 \- Got the titan environment setup
 
 
 \*\*Reading completed:\*\*
 
+\- Completed learning a basic understanding of linear algebra
 
 
 \*\*Stuck on / questions:\*\*
 
-\- None yet — setup phase
+\- Is there any ways of going about eigenvectors and eigendecomposition
 
 
 
 \*\*Next session:\*\*
 
-\-*Important note - on titan, PreemptMode=REQUEUE, this means jobs should be checkpointable or idempotent (smaller separate jobs)
+\- Learn multivariable calc and read Koon and Okihara
+
+\-*Important notes
+\- - on titan the are three partition that are useful: bw (the main one), sb (larger one), and gpu (contains gpus)
+\- - sb and gpu could be used later for greater processing
+\- - on bw, PreemptMode=REQUEUE, this means jobs should be checkpointable or idempotent (smaller separate jobs)
 
 
 
