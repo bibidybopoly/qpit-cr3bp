@@ -69,7 +69,7 @@
 
 \*\*Stuck on / questions:\*\*
 
-\- Is there any ways of going about eigenvectors and eigendecomposition
+\- Is there any other ways of going about eigenvectors and eigendecomposition
 
 
 
@@ -90,13 +90,12 @@
 
 \*\*Worked on:\*\* 
 
-
-
-\*\*Setup completed:\*\*
-
+\- Multivarible calc
 
 
 \*\*Reading completed:\*\*
+
+\- Gained a basic understanding of multivarible equations
 
 
 
@@ -108,4 +107,140 @@
 
 \*\*Next session:\*\*
 
+\- Learn multivariable calc and read Koon and Okihara
 
+
+
+\## 2026-05-31
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about partial derivatives of multivarible equations
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc and read Koon and Okihara
+
+
+
+\## 2026-06-01
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about gradient and directional derivatives
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc and read Koon and Okihara
+
+
+
+\## 2026-06-03
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about the chain rule for multivar and about curvature
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc and read Koon and Okihara
+
+
+
+\## 2026-06-04
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about divergence and curl for vector-valued functions
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc, specifically Laplacian and Jacobian, and read Koon and Okihara
+
+
+
+\## 2026-06-05
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about Jacobian, Laplacian, Lagrangian, tangent planes, and quadratic approximations.
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc, specifically line integrals, and read Koon and Okihara
