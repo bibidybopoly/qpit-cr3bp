@@ -107,7 +107,7 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc and read Koon and Okihara
+\- Learn multivariable calc and read Koon and Olihara
 
 
 
@@ -135,7 +135,7 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc and read Koon and Okihara
+\- Learn multivariable calc and read Koon and Olihara
 
 
 
@@ -162,7 +162,7 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc and read Koon and Okihara
+\- Learn multivariable calc and read Koon and Olihara
 
 
 
@@ -181,6 +181,7 @@
 \- Learned about the chain rule for multivar and about curvature
 
 
+
 \*\*Stuck on / questions:\*\*
 
 \- None yet — setup phase
@@ -189,7 +190,7 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc and read Koon and Okihara
+\- Learn multivariable calc and read Koon and Olihara
 
 
 
@@ -208,6 +209,7 @@
 \- Learned about divergence and curl for vector-valued functions
 
 
+
 \*\*Stuck on / questions:\*\*
 
 \- None yet — setup phase
@@ -216,7 +218,7 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc, specifically Laplacian and Jacobian, and read Koon and Okihara
+\- Learn multivariable calc, specifically Laplacian and Jacobian, and read Koon and Olihara
 
 
 
@@ -235,6 +237,7 @@
 \- Learned about Jacobian, Laplacian, Lagrangian, tangent planes, and quadratic approximations.
 
 
+
 \*\*Stuck on / questions:\*\*
 
 \- None yet — setup phase
@@ -243,4 +246,60 @@
 
 \*\*Next session:\*\*
 
-\- Learn multivariable calc, specifically line integrals, and read Koon and Okihara
+\- Learn multivariable calc, specifically line integrals, and read Koon and Olihara
+
+
+
+\## 2026-06-05
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc and reading
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about line integrals and read the first chapters of Koon and Olikara
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Learn multivariable calc, specifically double integrals
+
+
+
+\## 2026-06-06
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about double integrals
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Going to a summer camp and will have very little time to study Multivar Calc, will not be able to add entries into this log
