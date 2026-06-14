@@ -250,7 +250,7 @@
 
 
 
-\## 2026-06-05
+\## 2026-06-06
 
 
 
@@ -278,7 +278,7 @@
 
 
 
-\## 2026-06-06
+\## 2026-06-07
 
 
 
@@ -290,7 +290,7 @@
 
 \*\*Reading completed:\*\*
 
-\- Learned about double integrals
+\- Learned about double integrals and triple integrals
 
 
 
@@ -303,3 +303,31 @@
 \*\*Next session:\*\*
 
 \- Going to a summer camp and will have very little time to study Multivar Calc, will not be able to add entries into this log
+
+
+
+\## 2026-06-14
+
+
+
+\*\*Worked on:\*\* 
+
+\- Came back from summer camp and worked on multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about surface integrals
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Multivar calc, specifically flux and different theorems
