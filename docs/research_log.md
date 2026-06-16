@@ -359,3 +359,31 @@
 \*\*Next session:\*\*
 
 \- Final confirmation of comprehension of multivar calc and beginning ordinary diff eq
+
+
+
+\## 2026-06-16
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc and ODE
+
+
+
+\*\*Reading completed:\*\*
+
+\- Confirmed fluency of multivar and began learning ODE
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing ODE
