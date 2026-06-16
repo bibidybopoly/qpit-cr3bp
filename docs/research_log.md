@@ -331,3 +331,31 @@
 \*\*Next session:\*\*
 
 \- Multivar calc, specifically flux and different theorems
+
+
+
+\## 2026-06-15
+
+
+
+\*\*Worked on:\*\* 
+
+\- Multivarible calc
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about Stokes' theorem and variations of it
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Final confirmation of comprehension of multivar calc and beginning ordinary diff eq
