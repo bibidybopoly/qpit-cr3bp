@@ -387,3 +387,31 @@
 \*\*Next session:\*\*
 
 \- Continuing ODE
+
+
+
+\## 2026-06-18
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE
+
+
+
+\*\*Reading completed:\*\*
+
+\- Watched the first few MIT OCW videos for ODE and began the first problem set.
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing ODE
