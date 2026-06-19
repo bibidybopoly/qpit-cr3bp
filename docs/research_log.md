@@ -415,3 +415,42 @@
 \*\*Next session:\*\*
 
 \- Continuing ODE
+
+
+
+\## 2026-06-19
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE and the cr3bp integrator
+
+
+
+\*\*Reading completed:\*\*
+
+\- Finished the first ODE problem set
+
+\- Read the second chapter of Koon
+
+\- Confirmed that the cr3bp integrator worked
+
+\-Tested Jacobi conseration when starting with small velocity near L4 - passed
+\-Tested Jacobi conseration when starting near L1 - failed
+\-Tested Jacobi conseration when starting with tangential velocity near Earth - failed
+\-Tested Jacobi conseration when starting near the Moon - failed
+
+\-Plotted the zero-velocity curves for several Jacobi constants
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing ODE
