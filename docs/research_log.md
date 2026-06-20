@@ -454,3 +454,31 @@
 \*\*Next session:\*\*
 
 \- Continuing ODE
+
+
+
+\## 2026-06-19
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about systems of ODE
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing ODE
