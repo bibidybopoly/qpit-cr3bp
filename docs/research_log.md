@@ -537,6 +537,12 @@
 \- The Lorenz attractor is just so beautiful
 ![Description of image](output.png)
 
+\- When building the reservoir, it did not work unless it was fed normalized values
+\- It would be smart to normalize values down the line for the actual QPIT identifier too
+\- Its important to note that a model that scores well on training data may not score well on data it has never seen before
+\- The finished reservoir computer was able to match real values for around 2 Lyapunov times
+\- This result is worse than that of Pathak but the bug fixing and process were enough to learn the mechanics of a reservoir computer
+
 
 
 \*\*Stuck on / questions:\*\*
