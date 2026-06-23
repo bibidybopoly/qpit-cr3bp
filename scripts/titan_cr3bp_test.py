@@ -4,7 +4,6 @@ This is a pipeline test, not science — it proves the full chain works on Titan
 module load -> venv -> import cr3bp -> compute -> write results.
 """
 
-import sys
 import os
 import numpy as np
 from scipy.integrate import solve_ivp
@@ -34,7 +33,6 @@ for name, ic in test_ics.items():
 
 # Write results to a file we can retrieve
 outpath = "titan_test_results.txt"
-os.makedirs(os.path.dirname(outpath), exist_ok=True)
 with open(outpath, 'w') as f:
     f.write("CR3BP Titan pipeline test results\n")
     f.write("=" * 40 + "\n")

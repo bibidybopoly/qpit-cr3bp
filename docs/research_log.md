@@ -457,7 +457,7 @@
 
 
 
-\## 2026-06-19
+\## 2026-06-20
 
 
 
@@ -482,3 +482,65 @@
 \*\*Next session:\*\*
 
 \- Continuing ODE
+
+
+
+\## 2026-06-22
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned how to classify fixed points of system of ODE
+
+\- Read Pathak and learned about reservoir computing
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Building a Lorenz Reservoir Computer
+
+
+
+\## 2026-06-23
+
+
+
+\*\*Worked on:\*\* 
+
+\- Lorenz Reservoir Computer
+
+
+
+\*\*Reading completed:\*\*
+
+\- Pytorch 60 Minute Blitz
+
+\- Tested the cr3bp integrator on the Titan
+\- It worked but produced the greatest deviation around L1
+\- This is most likely due to L1 being the most chaotic
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- 
