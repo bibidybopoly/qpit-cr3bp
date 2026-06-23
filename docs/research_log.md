@@ -533,6 +533,10 @@
 \- It worked but produced the greatest deviation around L1
 \- This is most likely due to L1 being the most chaotic
 
+\- Began the Reservoir Computer with the Lorenz Equations  
+\- The Lorenz attractor is just so beautiful
+![Description of image](output.png)
+
 
 
 \*\*Stuck on / questions:\*\*
