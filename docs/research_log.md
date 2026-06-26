@@ -553,4 +553,89 @@
 
 \*\*Next session:\*\*
 
-\- 
+\- Finishing ODE
+
+
+
+\## 2026-06-24
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE 
+
+
+
+\*\*Reading completed:\*\*
+
+\- Learned about nonlinear systems of ODE
+\- Learned you can use the local linearization to gain information about the phase portrait
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Finishing ODE 
+
+
+
+\## 2026-06-25
+
+
+
+\*\*Worked on:\*\* 
+
+\- ODE 
+
+
+
+\*\*Reading completed:\*\*
+
+\- Read Ch. 6 of Strogatz
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Beginning Dynamical Systems
+
+
+
+\## 2026-06-25
+
+
+
+\*\*Worked on:\*\* 
+
+\- Dynamical Systems
+
+
+
+\*\*Reading completed:\*\*
+
+\- Read Ch. 7 of Strogatz
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing Dynamical Systems
