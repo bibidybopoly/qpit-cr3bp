@@ -639,3 +639,60 @@
 \*\*Next session:\*\*
 
 \- Continuing Dynamical Systems
+
+
+
+\## 2026-06-26
+
+
+
+\*\*Worked on:\*\* 
+
+\- Reading
+
+
+
+\*\*Reading completed:\*\*
+
+\- Read Koon Ch. 3
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Continuing Reading
+
+
+
+
+\## 2026-06-25
+
+
+
+\*\*Worked on:\*\* 
+
+\- Reading
+
+
+
+\*\*Reading completed:\*\*
+
+\- Read Olikara Ch. 2 and Howell
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Developing the single-shooting differential corrector
