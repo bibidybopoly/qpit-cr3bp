@@ -671,7 +671,7 @@
 
 
 
-\## 2026-06-25
+\## 2026-06-27
 
 
 
@@ -684,6 +684,36 @@
 \*\*Reading completed:\*\*
 
 \- Read Olikara Ch. 2 and Howell
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Developing the single-shooting differential corrector
+
+
+
+\## 2026-06-28
+
+
+
+\*\*Worked on:\*\* 
+
+\- Jacobian and STM integration
+
+
+
+\*\*Reading completed:\*\*
+
+\- Derived the Jacobian for the CR3BP system
+
+\- Validated the STM against small differences and it worked greatly
 
 
 
