@@ -726,3 +726,35 @@
 \*\*Next session:\*\*
 
 \- Developing the single-shooting differential corrector
+
+
+
+\## 2026-06-29
+
+
+
+\*\*Worked on:\*\* 
+
+\- Single-Shooting Differential Corrector
+
+
+
+\*\*Reading completed:\*\*
+
+\- Built the single-shooting differential corrector and used it to find the first periodic orbit of the project
+
+\- Used the eigenvectors of the Jacobian Matrix around L1 to get a good initial guess then used the differential corrrector to quadratically converge closer and closer to real orbit
+
+\- The final QPIT identifier could be used to generate initial guesses for a similar process
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Calculating families of periodic orbits
