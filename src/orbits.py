@@ -84,61 +84,274 @@ if len(sol.t_events[0]) > 0:
 else:
     print("\nNo crossing found — check the guess.")
 
-def correct_lyapunov_orbit(x0, vy0_guess, mu, tol=1e-11, max_iter=20, verbose=True):
+def correct_lyapunov_orbit(x0, vy0_guess, mu, tol=1e-11, max_iter=20,
+                            min_crossing_time=0.5, verbose=True):
     """Differential corrector for a planar Lyapunov orbit via single shooting.
 
-    Fixes x0; adjusts vy0 so that vx = 0 at the perpendicular x-axis crossing
-    (the half-period). Uses the STM for a Newton correction, with the
-    moving-crossing-time correction term.
-
-    Returns the corrected vy0, the half-period, and the converged crossing state.
+    Now with a guard against degenerate near-zero-time crossings.
     """
     vy0 = vy0_guess
 
     for iteration in range(max_iter):
-        # Integrate WITH the STM until the x-axis crossing
         state0 = [x0, 0.0, 0.0, vy0]
 
         def crossing_event(t, aug, mu):
-            return aug[1]   # y-component
+            return aug[1]
         crossing_event.terminal = True
         crossing_event.direction = -1
 
         sol = integrate_with_stm(state0, (0, 10), mu, events=crossing_event)
 
         if len(sol.t_events[0]) == 0:
-            raise RuntimeError("No x-axis crossing found during correction.")
+            raise RuntimeError("No x-axis crossing found.")
 
-        # State and STM at the crossing
+        t_cross = sol.t_events[0][0]
+
+        # GUARD: reject degenerate crossings that fire too early
+        if t_cross < min_crossing_time:
+            raise RuntimeError(
+                f"Degenerate crossing at t={t_cross:.3e} (< {min_crossing_time}). "
+                f"Guess vy0={vy0:.6f} likely outside convergence basin.")
+
         aug_cross = sol.y_events[0][0]
         state_cross = aug_cross[:4]
         Phi = aug_cross[4:].reshape(4, 4)
-
-        vx_cross = state_cross[2]   # the residual we want to zero
+        vx_cross = state_cross[2]
 
         if verbose:
             print(f"  iter {iteration}: vy0={vy0:.12f}, residual vx={vx_cross:.3e}")
 
-        # Converged?
         if abs(vx_cross) < tol:
-            half_period = sol.t_events[0][0]
             if verbose:
-                print(f"  Converged: vx residual {vx_cross:.2e} < tol {tol:.0e}")
-            return vy0, half_period, state_cross
+                print(f"  Converged: vx residual {vx_cross:.2e}")
+            return vy0, t_cross, state_cross
 
-        # --- Newton correction with moving-time term ---
-        # Derivatives at the crossing (from equations of motion)
         deriv = cr3bp_rhs(0, state_cross, mu)
-        ydot = deriv[1]        # d(y)/dt at crossing
-        vxdot = deriv[2]       # d(vx)/dt at crossing
-
-        # Corrected sensitivity: d(vx_cross)/d(vy0)
-        # Phi[2,3] = sensitivity of vx (idx 2) to initial vy (idx 3)
-        # Phi[1,3] = sensitivity of y  (idx 1) to initial vy (idx 3)
+        ydot, vxdot = deriv[1], deriv[2]
         sensitivity = Phi[2, 3] - (vxdot / ydot) * Phi[1, 3]
-
-        # Newton step
         delta_vy0 = -vx_cross / sensitivity
         vy0 = vy0 + delta_vy0
 
     raise RuntimeError(f"Did not converge in {max_iter} iterations.")
+
+def periodicity_constraint(X, mu):
+    """The periodicity constraint F and its Jacobian dF/dX for a symmetric
+    Lyapunov orbit.
+
+    Free variables X = [x0, vy0, T_half].
+    Integrates from (x0, 0, 0, vy0) for time T_half (no event detection).
+
+    Returns
+    -------
+    F : ndarray, shape (2,)
+        [y(T_half), vx(T_half)] — both should be zero for a periodic orbit.
+    dF : ndarray, shape (2, 3)
+        Jacobian of F with respect to [x0, vy0, T_half].
+    final_state : ndarray, shape (4,)
+        The full state at T_half (useful for diagnostics).
+    """
+    x0, vy0, T_half = X
+    state0 = [x0, 0.0, 0.0, vy0]
+
+    # Integrate state + STM for exactly T_half (no events — fixed time)
+    sol = integrate_with_stm(state0, (0, T_half), mu, t_eval=[T_half])
+    aug_final = sol.y[:, -1]
+    final_state = aug_final[:4]
+    Phi = aug_final[4:].reshape(4, 4)   # STM at T_half
+
+    # F = [y, vx] at T_half  (state indices: x=0, y=1, vx=2, vy=3)
+    F = np.array([final_state[1], final_state[2]])
+
+    # --- Jacobian dF/dX ---
+    # F depends on x0, vy0 through the STM (how final state responds to initial state)
+    # and on T_half through the equations of motion (how state changes with more time).
+
+    # Derivatives of [y, vx] w.r.t. [x0, vy0]:
+    # x0 is initial component 0, vy0 is initial component 3.
+    # Phi[i, j] = d(final state i) / d(initial state j)
+    dF_dx0  = np.array([Phi[1, 0], Phi[2, 0]])   # d[y,vx]/d(x0)
+    dF_dvy0 = np.array([Phi[1, 3], Phi[2, 3]])   # d[y,vx]/d(vy0)
+
+    # Derivative w.r.t. T_half: how do y and vx change if we integrate longer?
+    # That's just their time derivatives at the final state = the equations of motion.
+    deriv = cr3bp_rhs(0, final_state, mu)         # [vx, vy, ax, ay] at final state
+    dF_dT = np.array([deriv[1], deriv[2]])        # d[y,vx]/dt = [vy, ax] at final
+
+    # Assemble the 2x3 Jacobian: columns are d/dx0, d/dvy0, d/dT_half
+    dF = np.column_stack([dF_dx0, dF_dvy0, dF_dT])
+
+    return F, dF, final_state
+
+def family_tangent(dF, previous_tangent=None):
+    """Compute the tangent to the orbit family at a point.
+
+    The tangent is the null space of the 2x3 constraint Jacobian dF —
+    the direction along which F stays zero (i.e. you stay on the family).
+
+    Parameters
+    ----------
+    dF : ndarray, shape (2, 3)
+        The constraint Jacobian at the current orbit.
+    previous_tangent : ndarray, shape (3,), optional
+        The tangent from the previous step. Used to keep the direction
+        consistent (the null space is defined only up to sign, so we
+        pick the sign that agrees with where we were heading).
+
+    Returns
+    -------
+    tangent : ndarray, shape (3,)
+        Unit tangent vector to the family, sign-consistent with previous.
+    """
+    # SVD: dF = U @ diag(S) @ Vh.  The null space is the row of Vh
+    # corresponding to the smallest singular value (last row).
+    U, S, Vh = np.linalg.svd(dF)
+    tangent = Vh[-1, :]   # last right-singular vector = null space direction
+
+    # Normalize to unit length (so steps are measured in true arclength)
+    tangent = tangent / np.linalg.norm(tangent)
+
+    # Sign consistency: the null space direction could point "forward" or
+    # "backward" along the family. Keep it pointing the same way as last step.
+    if previous_tangent is not None:
+        if np.dot(tangent, previous_tangent) < 0:
+            tangent = -tangent
+
+    return tangent
+
+def predict_step(X, tangent, ds):
+    """Predict the next orbit by stepping along the tangent (finite Taylor step).
+
+    Parameters
+    ----------
+    X : ndarray, shape (3,)
+        Current orbit [x0, vy0, T_half].
+    tangent : ndarray, shape (3,)
+        Unit tangent to the family.
+    ds : float
+        Arclength step size.
+
+    Returns
+    -------
+    X_predicted : ndarray, shape (3,)
+        Predicted next orbit (near the family, slightly off it).
+    """
+    return X + ds * tangent
+
+def pseudo_arclength_correct(X_predicted, X_previous, tangent, ds, mu,
+                              tol=1e-11, max_iter=20, verbose=False):
+    """Correct a predicted orbit back onto the family using Newton's method
+    with the pseudo-arclength constraint.
+
+    Solves the square 3x3 system:
+      F(X) = 0                              (periodicity: be on the family)
+      (X - X_previous) . tangent - ds = 0   (arclength: be ds along the tangent)
+
+    Parameters
+    ----------
+    X_predicted : ndarray, shape (3,)
+        The predicted orbit (from predict_step) — starting guess for Newton.
+    X_previous : ndarray, shape (3,)
+        The previous converged orbit (anchor for the arclength constraint).
+    tangent : ndarray, shape (3,)
+        Unit tangent used for the prediction and the arclength constraint.
+    ds : float
+        Arclength step size.
+    mu : float
+        Mass parameter.
+
+    Returns
+    -------
+    X : ndarray, shape (3,)
+        The corrected orbit, on the family at arclength ds from X_previous.
+    """
+    X = X_predicted.copy()
+
+    for iteration in range(max_iter):
+        # Periodicity constraint and its 2x3 Jacobian
+        F, dF, _ = periodicity_constraint(X, mu)
+
+        # Arclength constraint: (X - X_previous) . tangent - ds
+        arc = np.dot(X - X_previous, tangent) - ds
+
+        # Assemble the augmented 3-vector G and its 3x3 Jacobian
+        G = np.array([F[0], F[1], arc])
+        dG = np.vstack([dF, tangent])   # 2x3 dF on top, tangent as bottom row
+
+        # Newton step: solve dG @ delta = -G
+        delta = np.linalg.solve(dG, -G)
+        X = X + delta
+
+        residual = np.max(np.abs(G))
+        if verbose:
+            print(f"    Newton iter {iteration}: |G| = {residual:.3e}")
+
+        if residual < tol:
+            return X
+
+    raise RuntimeError(f"Pseudo-arclength correction did not converge "
+                       f"(|G| = {residual:.2e} after {max_iter} iters)")
+
+def compute_family_pseudo_arclength(X_start, ds, n_orbits, mu,
+                                     initial_direction=None, verbose=True):
+    """Compute a Lyapunov orbit family via pseudo-arclength continuation.
+
+    Parameters
+    ----------
+    X_start : ndarray, shape (3,)
+        A known starting orbit [x0, vy0, T_half] (already on the family).
+    ds : float
+        Arclength step size.
+    n_orbits : int
+        Number of orbits to compute.
+    initial_direction : ndarray, shape (3,), optional
+        Hint for which way to march initially (the tangent's sign is
+        otherwise arbitrary). If None, uses the raw SVD direction.
+    verbose : bool
+
+    Returns
+    -------
+    family : list of dict
+        Each orbit bundled with x0, vy0, period, jacobi, state0, X.
+    """
+    from cr3bp import jacobi_constant
+
+    family = []
+    X = X_start.copy()
+    previous_tangent = initial_direction
+
+    for i in range(n_orbits):
+        # Evaluate the constraint and its Jacobian at the current orbit
+        F, dF, _ = periodicity_constraint(X, mu)
+
+        # Compute the tangent (sign-consistent with the previous step)
+        tangent = family_tangent(dF, previous_tangent)
+
+        # Bundle this orbit's data together (the stale-variable lesson)
+        state0 = [X[0], 0.0, 0.0, X[1]]
+        orbit = {
+            'x0': X[0], 'vy0': X[1], 'T_half': X[2],
+            'period': 2 * X[2],
+            'jacobi': jacobi_constant(state0, mu),
+            'state0': state0,
+            'X': X.copy(),
+        }
+        family.append(orbit)
+
+        if verbose and i % 10 == 0:
+            print(f"  Orbit {i}: x0={X[0]:.5f}, vy0={X[1]:.5f}, "
+                  f"C={orbit['jacobi']:.5f}, T={orbit['period']:.5f}")
+
+        # Predict the next orbit, then correct it back onto the family
+        try:
+            X_pred = predict_step(X, tangent, ds)
+            X_new = pseudo_arclength_correct(X_pred, X, tangent, ds, mu)
+        except RuntimeError as e:
+            if verbose:
+                print(f"  Stopped at orbit {i}: {e}")
+            break
+
+        # Advance
+        X = X_new
+        previous_tangent = tangent
+
+    return family

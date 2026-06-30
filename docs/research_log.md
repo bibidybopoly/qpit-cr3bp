@@ -747,6 +747,11 @@
 
 \- The final QPIT identifier could be used to generate initial guesses for a similar process
 
+\- Generated a families of Lyapunov orbits around L1 and L2
+\- Ran into errors and diffulcties with the differential corrector jumping to different branches of families or zeroing out
+\- This error was caused by using a fix distance between consecutive orbits
+\- Fixed by using a pseudo arclength
+![alt text](image.png)
 
 
 \*\*Stuck on / questions:\*\*
@@ -757,4 +762,34 @@
 
 \*\*Next session:\*\*
 
-\- Calculating families of periodic orbits
+\- Floquet Theory
+
+
+
+\## 2026-06-29 (part 2)
+\# Did a lot today so decided to split it up
+
+
+
+\*\*Worked on:\*\* 
+
+\- Floquet theory
+
+
+
+\*\*Reading completed:\*\*
+
+\- What I learned today connected everything of the project so far
+\- I now have a much better understanding of the mechanics
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Floquet Theory
