@@ -782,6 +782,17 @@
 \- What I learned today connected everything of the project so far
 \- I now have a much better understanding of the mechanics
 
+\- I previously thought that QPITs were an entirely different thing from periodic orbits but now I understand that they revolve around a certain type of them
+\- They are orbits with two frequencies, the first one is the same as a normal periodic orbit
+\- What makes it a torus is its second frequency which makes a circle perpendicular to the path of the first orbit
+\- What makes it quasi-periodic is that the ratio of the frequencies is irrational, they path of the orbit never lines up with itself when it comes back around
+
+\- Also, floquet theory is an amazing way of understanding orbits
+
+\- Used it to calculate that the families of orbits I produced earlier were all hyperbolic
+\- This fact means that they are likely no tori around them
+\- Tori are near stable orbits, so in the future it would be best to investigate halo, or other orbits
+
 
 
 \*\*Stuck on / questions:\*\*
@@ -792,4 +803,4 @@
 
 \*\*Next session:\*\*
 
-\- Floquet Theory
+\- Halo Orbits

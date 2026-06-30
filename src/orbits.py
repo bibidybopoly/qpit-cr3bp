@@ -355,3 +355,33 @@ def compute_family_pseudo_arclength(X_start, ds, n_orbits, mu,
         previous_tangent = tangent
 
     return family
+
+def monodromy_and_multipliers(state0, period, mu):
+    """Compute the monodromy matrix and Floquet multipliers for a periodic orbit.
+
+    The monodromy matrix M = Phi(T, 0) is the STM integrated over one full
+    period. Its eigenvalues are the Floquet multipliers.
+
+    Parameters
+    ----------
+    state0 : array_like, shape (4,)
+        Initial state on the periodic orbit.
+    period : float
+        The full orbit period T.
+    mu : float
+        Mass parameter.
+
+    Returns
+    -------
+    M : ndarray, shape (4, 4)
+        The monodromy matrix.
+    multipliers : ndarray, shape (4,)
+        The Floquet multipliers (eigenvalues of M).
+    """
+    # Integrate state + STM over one full period
+    sol = integrate_with_stm(state0, (0, period), mu, t_eval=[period])
+    aug_final = sol.y[:, -1]
+    M = aug_final[4:].reshape(4, 4)
+
+    multipliers = np.linalg.eigvals(M)
+    return M, multipliers
