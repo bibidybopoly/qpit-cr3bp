@@ -842,3 +842,34 @@
 \*\*Next session:\*\*
 
 \- Halo Orbits
+
+
+
+\## 2026-07-01
+
+
+
+\*\*Worked on:\*\* 
+
+\- Halo Orbits
+
+
+
+\*\*Reading completed:\*\*
+
+\- Calculated the first halo orbit of the project
+
+\- These are where I suspect QPITs to live around and the monodromy eigenvalues already have a center pair
+\- I am right on the cusp of calculating QPITs for this project
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT reading
