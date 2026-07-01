@@ -385,3 +385,81 @@ def monodromy_and_multipliers(state0, period, mu):
 
     multipliers = np.linalg.eigvals(M)
     return M, multipliers
+
+def compute_manifold(state0, period, mu, stable=False, n_points=40,
+                      epsilon=1e-6, integration_time=None, n_strand_points=500):
+    """Compute the stable or unstable manifold of a periodic orbit.
+
+    Perturbs along the (transported) stable/unstable eigenvector at n_points
+    around the orbit and integrates each perturbation to trace a manifold strand.
+
+    Parameters
+    ----------
+    state0 : array_like, shape (4,)
+        Initial state on the periodic orbit.
+    period : float
+        Orbit period.
+    mu : float
+        Mass parameter.
+    stable : bool
+        If True, compute the stable manifold (integrate backward).
+        If False, the unstable manifold (integrate forward).
+    n_points : int
+        Number of base points around the orbit to seed strands from.
+    epsilon : float
+        Perturbation size along the eigenvector.
+    integration_time : float or None
+        How long to integrate each strand. Defaults to ~period if None.
+    n_strand_points : int
+        Output resolution per strand.
+
+    Returns
+    -------
+    strands : list of ndarray
+        Each is shape (n_strand_points, 4): one manifold strand trajectory.
+    """
+    if integration_time is None:
+        integration_time = period
+
+    # 1. Get the monodromy matrix and the stable/unstable eigenvector at t=0
+    M, eigvals = monodromy_and_multipliers(state0, period, mu)
+    eigvals_full, eigvecs = np.linalg.eig(M)
+    if stable:
+        idx = np.argmin(np.abs(eigvals_full))   # |lambda| < 1
+    else:
+        idx = np.argmax(np.abs(eigvals_full))   # |lambda| > 1
+    v0 = np.real(eigvecs[:, idx])
+    v0 = v0 / np.linalg.norm(v0)
+
+    # 2. Integrate the orbit WITH the STM, sampling at n_points around it
+    t_samples = np.linspace(0, period, n_points, endpoint=False)
+    sol = integrate_with_stm(state0, (0, period), mu, t_eval=t_samples)
+
+    strands = []
+    for k in range(n_points):
+        # State and STM at this base point
+        aug = sol.y[:, k]
+        state_k = aug[:4]
+        Phi_k = aug[4:].reshape(4, 4)
+
+        # Transport the eigenvector to this point: v_k = Phi_k @ v0
+        v_k = Phi_k @ v0
+        v_k = v_k / np.linalg.norm(v_k)
+
+        # Perturb off the orbit along the transported direction
+        perturbed = state_k + epsilon * v_k
+
+        # Integrate the strand: forward for unstable, backward for stable
+        if stable:
+            t_span = (0, -integration_time)
+            t_eval = np.linspace(0, -integration_time, n_strand_points)
+        else:
+            t_span = (0, integration_time)
+            t_eval = np.linspace(0, integration_time, n_strand_points)
+
+        strand_sol = solve_ivp(cr3bp_rhs, t_span, perturbed, args=(mu,),
+                               method='DOP853', rtol=1e-11, atol=1e-11,
+                               t_eval=t_eval)
+        strands.append(strand_sol.y[:4, :].T)   # shape (n_strand_points, 4)
+
+    return strands

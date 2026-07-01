@@ -804,3 +804,41 @@
 \*\*Next session:\*\*
 
 \- Halo Orbits
+
+
+
+\## 2026-06-30
+
+
+
+\*\*Worked on:\*\* 
+
+\- Manifolds
+
+
+
+\*\*Reading completed:\*\*
+
+\- Read Koon Ch. 4, Gomez, and the first half of Burden & Faires Ch. 5
+
+\- Hartman-Grobman legitimizes the method of findind manifolds from a periodic orbit'
+\- At the point where the two over lap they are tangent, thus the linearization of the periodic orbit at a point can be used to find the start or end of a manifold
+
+\- Generated stable and unstable manifolds for a L1 Lyapunov orbit
+\- Unstable comes from and stable goes into the orbit
+\- The manifolds assymptotically approaches and comes from the orbit
+
+\- In preperation for halo orbits, I expanded the existing system into 3d (because halos are 3d) and created a new, more complex jacobian and STM to accompany it
+\- This STM was validated and is ready to produce halos
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- Halo Orbits
