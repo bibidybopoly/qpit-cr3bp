@@ -857,9 +857,9 @@
 
 \*\*Reading completed:\*\*
 
-\- Calculated the first halo orbit of the project
+\- Calculated families of Halo Orbits around L1 and L2 using all of the preexisting infrastructure of the project
 
-\- These are where I suspect QPITs to live around and the monodromy eigenvalues already have a center pair
+\- These are where I suspect QPITs to live around and the monodromy eigenvalues already have center pairs
 \- I am right on the cusp of calculating QPITs for this project
 
 

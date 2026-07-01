@@ -238,7 +238,8 @@ def predict_step(X, tangent, ds):
     return X + ds * tangent
 
 def pseudo_arclength_correct(X_predicted, X_previous, tangent, ds, mu,
-                              tol=1e-11, max_iter=20, verbose=False):
+                              tol=1e-11, max_iter=20, verbose=False,
+                              constraint_fn=periodicity_constraint):
     """Correct a predicted orbit back onto the family using Newton's method
     with the pseudo-arclength constraint.
 
@@ -267,15 +268,17 @@ def pseudo_arclength_correct(X_predicted, X_previous, tangent, ds, mu,
     X = X_predicted.copy()
 
     for iteration in range(max_iter):
-        # Periodicity constraint and its 2x3 Jacobian
-        F, dF, _ = periodicity_constraint(X, mu)
+        # Periodicity constraint and its Jacobian (Lyapunov 2x3, or halo 3x4)
+        F, dF, _ = constraint_fn(X, mu)
 
         # Arclength constraint: (X - X_previous) . tangent - ds
         arc = np.dot(X - X_previous, tangent) - ds
 
-        # Assemble the augmented 3-vector G and its 3x3 Jacobian
-        G = np.array([F[0], F[1], arc])
-        dG = np.vstack([dF, tangent])   # 2x3 dF on top, tangent as bottom row
+        # Assemble the augmented residual G and its square Jacobian dG.
+        # Concatenate ALL constraint components with the arclength row, so this
+        # works whether F has 2 entries (Lyapunov) or 3 (halo).
+        G = np.concatenate([np.atleast_1d(F), [arc]])
+        dG = np.vstack([dF, tangent])   # (k x n) constraint on top, tangent as bottom row
 
         # Newton step: solve dG @ delta = -G
         delta = np.linalg.solve(dG, -G)
@@ -463,3 +466,103 @@ def compute_manifold(state0, period, mu, stable=False, n_points=40,
         strands.append(strand_sol.y[:4, :].T)   # shape (n_strand_points, 4)
 
     return strands
+
+# ============================================================
+#  Halo families — same PAC engine, 3D constraint
+# ============================================================
+
+def halo_periodicity_constraint(X, mu):
+    """Perpendicular x-z-plane crossing constraint for a symmetric halo.
+
+    The 3D analog of periodicity_constraint. Free variables
+    X = [x0, z0, vy0, T_half]; integrates from (x0, 0, z0, 0, vy0, 0) for
+    exactly T_half (fixed time, no event).
+
+    Returns
+    -------
+    F : ndarray, shape (3,)
+        [y, vx, vz] at T_half — all zero at a perpendicular crossing.
+    dF : ndarray, shape (3, 4)
+        Jacobian of F w.r.t. [x0, z0, vy0, T_half].
+    final_state : ndarray, shape (6,)
+    """
+    from cr3bp_3d import cr3bp_rhs_3d, integrate_with_stm_3d
+    x0, z0, vy0, T_half = X
+    state0 = [x0, 0.0, z0, 0.0, vy0, 0.0]
+
+    sol = integrate_with_stm_3d(state0, (0, T_half), mu, t_eval=[T_half])
+    aug_final = sol.y[:, -1]
+    final_state = aug_final[:6]
+    Phi = aug_final[6:].reshape(6, 6)          # STM at T_half
+
+    # 3D state indices: x=0, y=1, z=2, vx=3, vy=4, vz=5
+    F = np.array([final_state[1], final_state[3], final_state[5]])   # [y, vx, vz]
+
+    # dF/d(free vars) through the STM. Free vars map to initial-state columns:
+    #   x0 -> col 0,  z0 -> col 2,  vy0 -> col 4
+    dF_dx0  = np.array([Phi[1, 0], Phi[3, 0], Phi[5, 0]])
+    dF_dz0  = np.array([Phi[1, 2], Phi[3, 2], Phi[5, 2]])
+    dF_dvy0 = np.array([Phi[1, 4], Phi[3, 4], Phi[5, 4]])
+
+    # dF/dT_half = time derivatives of [y, vx, vz] at the final state (the EOM)
+    deriv = cr3bp_rhs_3d(0, final_state, mu)   # [vx, vy, vz, ax, ay, az]
+    dF_dT = np.array([deriv[1], deriv[3], deriv[5]])   # d[y,vx,vz]/dt
+
+    dF = np.column_stack([dF_dx0, dF_dz0, dF_dvy0, dF_dT])   # 3x4
+    return F, dF, final_state
+
+
+def compute_halo_family(X_start, ds, n_orbits, mu,
+                        initial_direction=None, verbose=True):
+    """Halo family via pseudo-arclength continuation.
+
+    Reuses the SAME engine as the Lyapunov families — family_tangent,
+    predict_step, pseudo_arclength_correct — because the continuation
+    machinery is dimension-blind. Only the constraint (halo_periodicity_
+    constraint) and the state unpacking are problem-specific.
+
+    Free variables X = [x0, z0, vy0, T_half].
+
+    Returns
+    -------
+    family : list of dict, each with x0, z0, vy0, T_half, period, jacobi,
+             state0 (6-vector), and X.
+    """
+    from cr3bp_3d import jacobi_constant_3d
+
+    family = []
+    X = np.asarray(X_start, dtype=float).copy()
+    previous_tangent = initial_direction
+
+    for i in range(n_orbits):
+        F, dF, _ = halo_periodicity_constraint(X, mu)
+        tangent = family_tangent(dF, previous_tangent)
+
+        state0 = [X[0], 0.0, X[1], 0.0, X[2], 0.0]
+        orbit = {
+            'x0': X[0], 'z0': X[1], 'vy0': X[2], 'T_half': X[3],
+            'period': 2 * X[3],
+            'jacobi': jacobi_constant_3d(state0, mu),
+            'state0': state0,
+            'X': X.copy(),
+        }
+        family.append(orbit)
+
+        if verbose and i % 10 == 0:
+            print(f"  Orbit {i}: x0={X[0]:.5f}, z0={X[1]:.5f}, vy0={X[2]:.5f}, "
+                  f"C={orbit['jacobi']:.5f}, T={orbit['period']:.5f}")
+
+        try:
+            X_pred = predict_step(X, tangent, ds)
+            X_new = pseudo_arclength_correct(
+                X_pred, X, tangent, ds, mu,
+                constraint_fn=halo_periodicity_constraint)
+        except RuntimeError as e:
+            if verbose:
+                print(f"  Stopped at orbit {i}: {e}")
+            break
+
+        X = X_new
+        previous_tangent = tangent
+
+    return family

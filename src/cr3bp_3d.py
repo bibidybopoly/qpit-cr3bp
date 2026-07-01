@@ -78,15 +78,29 @@ def integrate_with_stm_3d(state0, t_span, mu, **kwargs):
 #  Richardson 3rd-order halo seed + differential corrector
 # ============================================================
 
-def _richardson_constants(mu):
-    """All Richardson (1980) constants for the L1 halo construction."""
-    # gamma_L1: distance from Moon to L1 (Newton on the quintic)
+def _richardson_constants(mu, point='L1'):
+    """All Richardson (1980) constants for the L1 or L2 halo construction.
+
+    point : 'L1' or 'L2'. Only the collinear-point quintic and the Legendre
+    coefficients c_n differ between the two; everything downstream (the a/b/d
+    amplitude coefficients, l1, l2, ...) is identical once c2, c3, c4 are set.
+    """
+    # gamma: distance from the Moon to the libration point (Newton on the quintic)
     g = (mu/3.0)**(1.0/3.0)
     for _ in range(100):
-        f  = g**5 - (3-mu)*g**4 + (3-2*mu)*g**3 - mu*g**2 + 2*mu*g - mu
-        df = 5*g**4 - 4*(3-mu)*g**3 + 3*(3-2*mu)*g**2 - 2*mu*g + 2*mu
+        if point == 'L1':
+            f  = g**5 - (3-mu)*g**4 + (3-2*mu)*g**3 - mu*g**2 + 2*mu*g - mu
+            df = 5*g**4 - 4*(3-mu)*g**3 + 3*(3-2*mu)*g**2 - 2*mu*g + 2*mu
+        elif point == 'L2':
+            f  = g**5 + (3-mu)*g**4 + (3-2*mu)*g**3 - mu*g**2 - 2*mu*g - mu
+            df = 5*g**4 + 4*(3-mu)*g**3 + 3*(3-2*mu)*g**2 - 2*mu*g - 2*mu
+        else:
+            raise ValueError(f"point must be 'L1' or 'L2', got {point!r}")
         g -= f/df
-    cn = lambda n: (1.0/g**3)*(mu + (-1)**n*(1-mu)*g**(n+1)/(1-g)**(n+1))
+    if point == 'L1':
+        cn = lambda n: (1.0/g**3)*(mu + (-1)**n*(1-mu)*g**(n+1)/(1-g)**(n+1))
+    else:  # L2: expansion centered past the Moon -> (1-g)->(1+g); mu term gains (-1)^n
+        cn = lambda n: ((-1)**n/g**3)*(mu + (1-mu)*g**(n+1)/(1+g)**(n+1))
     c2, c3, c4 = cn(2), cn(3), cn(4)
 
     # in-plane frequency lam(=omega_p): oscillatory root of the linear system
@@ -124,12 +138,13 @@ def _richardson_constants(mu):
                 b21=b21, b22=b22, b31=b31, b32=b32, d21=d21, d31=d31, d32=d32)
 
 
-def richardson_halo_seed(Az, mu, northern=True):
+def richardson_halo_seed(Az, mu, point='L1', northern=True):
     """3rd-order analytic seed on the x-z plane (perpendicular crossing).
 
-    Returns (state0, T_guess, (Ax, Az)). state0 = [x,0,z,0,vy,0].
+    point : 'L1' or 'L2'. Returns (state0, T_guess, (Ax, Az)),
+    state0 = [x,0,z,0,vy,0].
     """
-    C = _richardson_constants(mu)
+    C = _richardson_constants(mu, point)
     Ax2 = -(C['Delta'] + C['l2']*Az**2)/C['l1']     # amplitude constraint
     if Ax2 < 0:
         raise ValueError(f"no real A_x for A_z={Az}")
@@ -140,8 +155,8 @@ def richardson_halo_seed(Az, mu, northern=True):
     z_s = dm*(Az - 2*C['d21']*Ax*Az + C['d32']*Az*Ax**2 - C['d31']*Az**3)
     yd  = C['k']*Ax + 2*(C['b21']*Ax**2 - C['b22']*Az**2) \
           + 3*(C['b31']*Ax**3 - C['b32']*Ax*Az**2)
-    L1x = 1 - mu - g
-    seed = np.array([L1x + g*x_s, 0.0, g*z_s, 0.0, g*lam*yd, 0.0])
+    Lx = (1 - mu - g) if point == 'L1' else (1 - mu + g)
+    seed = np.array([Lx + g*x_s, 0.0, g*z_s, 0.0, g*lam*yd, 0.0])
     T_guess = 2*np.pi/lam
     return seed, T_guess, (Ax, Az)
 
