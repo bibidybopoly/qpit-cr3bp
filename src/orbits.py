@@ -566,3 +566,95 @@ def compute_halo_family(X_start, ds, n_orbits, mu,
         previous_tangent = tangent
 
     return family
+
+
+# ============================================================
+#  Floquet sweep: rotation number along a halo family
+# ============================================================
+
+def sweep_rotation_numbers(family, mu, anchor=None, overlap_min=0.9,
+                           circle_tol=1e-4, verbose=False):
+    """Track the center pair's rotation number across a halo family.
+
+    Consumes a family object (list of orbit dicts from compute_halo_family) and
+    calls the stateless halo_stability per orbit; the CROSS-ORBIT memory lives
+    here. Strategy, exactly as derived:
+
+      1. Anchor on the cleanest single-center orbit -- center on the circle,
+         well clear of +/-1 (theta near 90 deg), and the hyperbolic pair still
+         off the circle so the 3-way split is unambiguous. Not the large-
+         amplitude end (that's bifurcation soup); the clean middle.
+      2. Walk outward in BOTH directions. At each step, match the carried center
+         eigenvector against every candidate eigenvector (both members of every
+         pair -- so the match survives the pair crossing -1, where the Im>=0
+         member flips to its conjugate). Pick maximum overlap |<v_prev,v_cand>|.
+      3. Accumulate theta continuously as arg(mu_i / mu_prev) -- this unwraps
+         through 180 deg automatically, no branch juggling.
+      4. Stop a direction when the matched pair leaves the circle (center has
+         gone hyperbolic -> torus ends) or the overlap collapses (lost track).
+
+    Returns dict of arrays over the tracked orbits (sorted by family index):
+      'index', 'C' (Jacobi), 'theta' (unwrapped, rad), 'rho' = theta/2pi,
+      'anchor' (the chosen anchor index).
+    """
+    from cr3bp_3d import halo_stability
+
+    R = [halo_stability(o['state0'], o['period'], mu, circle_tol=circle_tol)
+         for o in family]
+
+    if anchor is None:
+        # Anchor in the FIRST clean block -- before the hyperbolic pair ever
+        # joins the circle -- so tracking walks outward from clean territory
+        # instead of starting inside the two-elliptic-pair region.
+        mess = [i for i, r in enumerate(R) if r['hyp_on_circle']]
+        hi = mess[0] if mess else len(R)
+        clean = [i for i in range(hi)
+                 if R[i]['center'] is not None and not R[i]['hyp_on_circle']]
+        if not clean:   # fall back to any clean orbit anywhere
+            clean = [i for i, r in enumerate(R)
+                     if r['center'] is not None and not r['hyp_on_circle']]
+        if not clean:
+            raise RuntimeError("no clean single-center anchor orbit found")
+        anchor = min(clean, key=lambda i: abs(R[i]['theta'] - np.pi/2))
+    if verbose:
+        print(f"  anchor = orbit {anchor}  (theta = {np.degrees(R[anchor]['theta']):.1f} deg)")
+
+    def candidates(r, trivial_tol=1e-3):
+        # Every eigenvector is a candidate EXCEPT the trivial pair, which sits
+        # pinned at +1. Excluding it stops the tracker from ever latching onto
+        # the zero-rotation direction. The center pair, even at theta ~ 3 deg,
+        # sits |mu-1| ~ 0.05 >> trivial_tol, so it's never wrongly excluded --
+        # only once theta < ~0.06 deg, i.e. the torus has degenerated anyway.
+        c = []
+        for p in r['pairs']:
+            if abs(p['mu'] - 1.0) < trivial_tol:
+                continue
+            c.append((p['mu'], p['vec']))
+            c.append((np.conj(p['mu']), np.conj(p['vec'])))
+        return c
+
+    theta = {anchor: float(np.angle(R[anchor]['center']['mu']))}
+
+    def walk(seq, mu0, v0, th0):
+        mu_prev, v_prev, th_prev = mu0, v0, th0
+        for i in seq:
+            mu_i, v_i = max(candidates(R[i]),
+                            key=lambda c: abs(np.vdot(v_prev, c[1])))
+            if abs(np.vdot(v_prev, v_i)) < overlap_min:
+                if verbose: print(f"  stop at {i}: overlap collapsed")
+                break
+            if abs(abs(mu_i) - 1.0) > circle_tol:
+                if verbose: print(f"  stop at {i}: center left the circle (|mu|={abs(mu_i):.3f})")
+                break
+            th_i = th_prev + float(np.angle(mu_i / mu_prev))
+            theta[i] = th_i
+            mu_prev, v_prev, th_prev = mu_i, v_i, th_i
+
+    a = R[anchor]['center']
+    walk(range(anchor - 1, -1, -1), a['mu'], a['vec'], theta[anchor])
+    walk(range(anchor + 1, len(family)), a['mu'], a['vec'], theta[anchor])
+
+    idx = np.array(sorted(theta))
+    th  = np.array([theta[i] for i in idx])
+    C   = np.array([family[i]['jacobi'] for i in idx])
+    return dict(index=idx, C=C, theta=th, rho=th / (2*np.pi), anchor=anchor)

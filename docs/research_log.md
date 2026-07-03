@@ -873,3 +873,46 @@
 \*\*Next session:\*\*
 
 \- QPIT reading
+
+
+
+\## 2026-07-02
+
+
+
+\*\*Worked on:\*\* 
+
+\- Halo Orbits Floquet Analysis
+
+
+
+\*\*Reading completed:\*\*
+
+\- Analysed the floquet multipliers of the Halo Families I generated to look for where QPITs could be near
+
+\- The two best candidates:
+\-L1 orbit 16 — C=3.077, ρ=0.272
+\-L2 orbit 29 — C=3.060, ρ=0.295
+
+\- This is my last real session before going to the National Youth Science Camp
+\- At camp I will:  
+\- -Read all relevent material about generating QPITs
+\- -Choose the method I will implement to actually do so
+\- -And reach out to Olikara and Baresi asking for their help
+
+\- All of this will be in preparation for when I come back from camp in a month
+\- When I come back, I will be jumping straight into the most difficult part of the project: Computind QPITs
+\- Hopefully all of the preparation of done before camp and will do during camp will set me up to succeed after it
+\- So until I return, Goodbye
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- None yet — setup phase
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Computation

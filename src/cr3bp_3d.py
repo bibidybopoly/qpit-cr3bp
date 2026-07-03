@@ -195,14 +195,84 @@ def halo_corrector(seed, mu, tol=1e-12, itmax=30, verbose=False):
     return s, 2*th, False
 
 
-def halo_stability(state0, T, mu):
-    """Monodromy eigenvalues + center rotation number (2nd torus frequency).
+def halo_stability(state0, T, mu, circle_tol=1e-4):
+    """Floquet analysis of ONE periodic orbit: monodromy spectrum, grouped into
+    reciprocal pairs and classified hyperbolic / trivial / center.
 
-    Returns (eigenvalues, rotation_number_rad_or_None).
+    Stateless by design. It classifies a single orbit and returns the full
+    labeled spectrum *including eigenvectors*. Following the center pair
+    continuously along a family (matching by eigenvector overlap, unwrapping
+    theta) is the sweep's job, because only the sweep holds cross-orbit memory.
+
+    Why not just "the complex pair on the circle"? The trivial (1,1) block is
+    defective, so ~1e-12 integration error splits it off-axis into e^{+/-i eps}
+    with eps ~ 1e-6 -- itself a complex pair on the circle. So we never key on
+    imaginary part directly. Instead we use what is certain: the hyperbolic pair
+    is real with |mu| far from 1; the trivial pair hugs +1; the center pair is
+    what remains, and only *it* sits a finite angle from +1.
+
+    Returns dict:
+      'multipliers' : (6,) monodromy eigenvalues (raw Floquet multipliers)
+      'pairs'       : list of 3 reciprocal-pair records, each
+                        {'type': 'hyperbolic'|'trivial'|'center',
+                         'mu'   : representative eigenvalue (Im >= 0 branch),
+                         'vec'  : unit eigenvector for 'mu', complex (6,),
+                         'mate' : reciprocal partner eigenvalue,
+                         'dev'  : | |mu| - 1 |  (distance off the unit circle)}
+      'center'      : the pair record tagged 'center', or None if the gate
+                      (on the circle AND clear of +1) fails -- e.g. right at the
+                      bifurcation where center collides with the trivial fuzz.
+      'theta'       : arg(center.mu) in (0, pi], or None. Per-orbit and NOT
+                      unwrapped -- the sweep unwraps it along the family.
+      'hyp_on_circle' : True if the hyperbolic pair has drifted onto the circle
+                      (a stability change, e.g. deep in the NRHO regime), which
+                      makes the 3-way split ambiguous on this orbit.
     """
     sol = integrate_with_stm_3d(state0, [0, T], mu)
     M = sol.y[6:, -1].reshape(6, 6)
-    ev = np.linalg.eigvals(M)
-    center = [e for e in ev if abs(abs(e) - 1) < 1e-3 and abs(e.imag) > 1e-6]
-    rot = float(np.angle(center[0])) if center else None
-    return ev, rot
+    vals, vecs = np.linalg.eig(M)
+
+    # --- group into reciprocal pairs: mate of lambda is the eigenvalue nearest
+    #     1/lambda (true for all three pair types, since |mu|=1 => 1/mu = conj mu,
+    #     and the hyperbolic pair is literally (lambda, 1/lambda)).
+    remaining = list(range(6))
+    pair_idx = []
+    while remaining:
+        i = remaining.pop(0)
+        inv = 1.0 / vals[i]
+        j = min(remaining, key=lambda k: abs(vals[k] - inv))
+        remaining.remove(j)
+        pair_idx.append((i, j))
+
+    # --- pair records; representative is the member with Im >= 0 (fixes theta
+    #     branch to (0, pi] and gives a definite eigenvector to carry/track).
+    pairs = []
+    for i, j in pair_idx:
+        rep, mate = (i, j) if vals[i].imag >= vals[j].imag else (j, i)
+        v = vecs[:, rep]
+        v = v / np.linalg.norm(v)
+        pairs.append({'mu': vals[rep], 'vec': v, 'mate': vals[mate],
+                      'dev': abs(abs(vals[rep]) - 1.0)})
+
+    # --- classify. Hyperbolic = pair sitting farthest off the unit circle.
+    hyp = max(pairs, key=lambda p: p['dev'])
+    hyp['type'] = 'hyperbolic'
+    rest = [p for p in pairs if p is not hyp]
+    # of the two near-circle pairs, trivial is the one hugging +1.
+    trivial = min(rest, key=lambda p: abs(p['mu'] - 1.0))
+    trivial['type'] = 'trivial'
+    center = [p for p in rest if p is not trivial][0]
+    center['type'] = 'center'
+
+    # --- gates. Center is valid only if it is ON the circle and CLEAR of +1
+    #     (so it isn't the trivial fuzz). And flag if the "hyperbolic" pair has
+    #     actually come onto the circle -- then this orbit's 3-way split is not
+    #     trustworthy and the sweep should treat it with care.
+    center_ok = center['dev'] < circle_tol and abs(center['mu'] - 1.0) > circle_tol
+    hyp_on_circle = hyp['dev'] < circle_tol
+
+    return {'multipliers': vals,
+            'pairs': pairs,
+            'center': center if center_ok else None,
+            'theta': float(np.angle(center['mu'])) if center_ok else None,
+            'hyp_on_circle': hyp_on_circle}
