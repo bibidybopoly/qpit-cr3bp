@@ -916,3 +916,41 @@
 \*\*Next session:\*\*
 
 \- QPIT Computation
+
+
+
+\## 2026-08-02
+
+
+\*\*Worked on:\*\* 
+
+\- Reading and Emails
+
+
+
+\*\*Reading completed:\*\*
+
+\- Began reading Howell 2021
+
+\- Decided on GMOS for this project for a couple reasons:
+\- The literature shows that it offers the most accuracy compared to computational costs
+\- GMOS gives stability information for the QPITs it generates
+\- GMOS builds off the current infrastucture I have built
+
+\- Began drafting emails to Olikara, Baresi, and Howell asking for clarification on a few things regarding GMOS computation
+\- Having others help me with QPIT computation will be very helpful
+
+
+
+\*\*Stuck on / questions:\*\*
+
+\- Does GMOS have any quirks for 3d Tori
+\- How do you easily converge on the first torus in a family
+\- Has anyone already done what Im aiming to do
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Computation
+\- Emails Sent
