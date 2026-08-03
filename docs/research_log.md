@@ -930,6 +930,8 @@
 
 \*\*Reading completed:\*\*
 
+\- I have come back from summer camp and decided to ease into my research
+
 \- Began reading Howell 2021
 
 \- Decided on GMOS for this project for a couple reasons:
