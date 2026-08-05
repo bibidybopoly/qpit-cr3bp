@@ -919,7 +919,7 @@
 
 
 
-\## 2026-08-02
+\## 2026-08-03
 
 
 \*\*Worked on:\*\* 
@@ -956,3 +956,62 @@
 
 \- QPIT Computation
 \- Emails Sent
+
+
+
+\## 2026-08-04
+
+
+\*\*Worked on:\*\* 
+
+\- Emails and GMOS implementation
+
+
+
+\*\*Reading completed:\*\*
+
+\- Sent the emails
+
+\- Derived the invariance equation
+\- Began to implement GMOS
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Computation
+
+
+
+\## 2026-08-05
+
+
+\*\*Worked on:\*\* 
+
+\- First QPIT
+
+
+
+\*\*Reading completed:\*\*
+
+\- Converged on the first QPIT of the project
+\- Orbit that this QPIT came from was L2 orbit 29 — C=3.060, ρ=0.295
+\- This QPIT was found using GMOS that I for the most part already implemented
+\- It converged in 3 iterations
+\- The QPIT amplitude is 17.2 km, T is 3.13, C is 3.06, rho (linear) is 1.842 rad and rho (torus) is slightly higher
+
+\- This is really big and was one of the hardest and most anticipated parts of this project for me
+\- The full dataset generation is getting closer and closer
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Continuation
