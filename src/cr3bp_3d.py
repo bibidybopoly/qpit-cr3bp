@@ -161,38 +161,114 @@ def richardson_halo_seed(Az, mu, point='L1', northern=True):
     return seed, T_guess, (Ax, Az)
 
 
-def halo_corrector(seed, mu, tol=1e-12, itmax=30, verbose=False):
+def halo_corrector(seed, mu, tol=1e-12, itmax=30, verbose=False,
+                   t_min=1e-6, t_max=10.0, step_cap=0.1,
+                   divergence_factor=1e2, return_info=False):
     """x-z symmetric perpendicular-crossing corrector: fix Z0, vary (X0, vy0).
 
-    Returns (state0_corrected, period_T, converged_bool).
+    Returns (state0_corrected, period_T, converged_bool), or with
+    return_info=True a 4th element carrying the failure code and iteration log.
+
+    ---------------------------------------------------------------------
+    SILENT-WRONG-ANSWER BUG, FIXED.  The residual here is hypot(vx, vz) at the
+    crossing.  Every seed this method accepts has the form [x, 0, z, 0, vy, 0],
+    so vx = vz = 0 IDENTICALLY at t = 0.  If the event ever fires at t = 0 the
+    residual is exactly zero, the convergence test passes, and the corrector
+    returns the seed with T = 0 and an identity monodromy -- reported as
+    converged.  Every downstream consumer then sees six unit multipliers and no
+    centre pair.
+
+    The old code made that reachable.  With `direction = -1` fixed, an iterate
+    whose vy0 has gone negative has y DECREASING at t = 0, which is exactly the
+    crossing direction being watched, so the terminal event fires immediately.
+    And vy0 does go negative, because the undamped Newton step can leave the
+    basin: on a seed 0.002 off the family in z0 the iteration ran
+    x0 = 1.044 -> 1.105 -> 0.977 -> 4.210 with vy0 -> -1.296 in three steps,
+    the last step having |d| = 3.8.
+
+    Three changes, each addressing a distinct part of that chain:
+
+    1. DIRECTION IS NOW ADAPTIVE: `direction = -sign(vy0)`.  The condition we
+       actually want is "the next return to the x-z plane", and at t = 0 the
+       trajectory leaves the plane with sign(vy0).  Watching for the opposite
+       sign makes the t = 0 crossing STRUCTURALLY IMPOSSIBLE rather than merely
+       guarded against.  For every seed with vy0 > 0 this is identical to the
+       old `direction = -1`, so nothing that previously worked changes.
+    2. THE STEP IS DAMPED to |d| <= step_cap.  Measured over L1 and L2 seeds
+       spanning Az = 0.04 to 0.20, the largest step on a run that converges is
+       1.44e-2, so the 0.1 default has ~7x headroom and never activates on a
+       healthy run.  It only bites when Newton is already leaving the basin.
+    3. DIVERGENCE AND DEGENERACY ARE REPORTED, not converted into a return
+       value that looks like success: codes 'diverged', 'no_crossing',
+       'degenerate_crossing', 'max_iter'.
+
+    The seed shape is now checked too.  The whole method rests on the x-z
+    mirror symmetry, which is only valid from a perpendicular crossing; handed
+    a general state it would return a confident non-orbit.
     """
-    s = seed.copy()
-    ev = lambda t, S, mu: S[1]
-    ev.terminal = True
-    ev.direction = -1
-    th = np.nan
+    s = np.asarray(seed, dtype=float).copy()
+    if max(abs(s[1]), abs(s[3]), abs(s[5])) > 1e-12:
+        raise ValueError(
+            "halo_corrector requires a perpendicular x-z crossing "
+            "[x, 0, z, 0, vy, 0]; got y=%.3e vx=%.3e vz=%.3e. The mirror "
+            "symmetry this corrector exploits does not hold otherwise."
+            % (s[1], s[3], s[5]))
+    if s[4] == 0.0:
+        raise ValueError("halo_corrector: vy0 = 0, the trajectory never "
+                         "leaves the x-z plane and no crossing exists")
+
+    th, best, log, code = np.nan, np.inf, [], 'max_iter'
     for it in range(itmax):
+        def ev(t, S, mu):
+            return S[1]
+        ev.terminal = True
+        ev.direction = -np.sign(s[4])     # excludes t = 0 by construction
+
         aug0 = np.concatenate([s, np.eye(6).flatten()])
-        sol = solve_ivp(cr3bp_rhs_with_stm_3d, [0, 10], aug0, args=(mu,), events=ev,
-                        method='DOP853', rtol=1e-12, atol=1e-12, max_step=0.05)
+        sol = solve_ivp(cr3bp_rhs_with_stm_3d, [0, t_max], aug0, args=(mu,),
+                        events=ev, method='DOP853', rtol=1e-12, atol=1e-12,
+                        max_step=0.05)
+        if sol.t_events[0].size == 0:
+            code = 'no_crossing'
+            break
         th = sol.t_events[0][0]
+        if th <= t_min:
+            code = 'degenerate_crossing'   # unreachable now; kept as a tripwire
+            break
+
         Sf = sol.y_events[0][0]
         sf, Phi = Sf[:6], Sf[6:].reshape(6, 6)
-        res = np.hypot(sf[3], sf[5])
+        res = float(np.hypot(sf[3], sf[5]))
+        log.append(dict(it=it, th=float(th), res=res, x0=s[0], vy0=s[4]))
         if verbose:
-            print(f"  it{it}: T/2={th:.6f}  vx_f={sf[3]:+.3e}  vz_f={sf[5]:+.3e}  |res|={res:.3e}")
+            print(f"  it{it}: T/2={th:.6f}  vx_f={sf[3]:+.3e}  "
+                  f"vz_f={sf[5]:+.3e}  |res|={res:.3e}")
         if res < tol:
-            return s, 2*th, True
-        # accelerations at the crossing (your EOM already returns ax, az in slots 3, 5)
+            code = 'converged'
+            break
+        if res > divergence_factor * best:
+            code = 'diverged'
+            break
+        best = min(best, res)
+
         acc = cr3bp_rhs_3d(0.0, sf, mu)
         xdd, zdd, yd = acc[3], acc[5], sf[4]
-        # perpendicular-crossing correction with variable crossing time
         M  = np.array([[Phi[3, 0], Phi[3, 4]],
                        [Phi[5, 0], Phi[5, 4]]])
         M -= (1.0/yd) * np.array([[xdd], [zdd]]) @ np.array([[Phi[1, 0], Phi[1, 4]]])
         d  = np.linalg.solve(M, -np.array([sf[3], sf[5]]))
+        nrm = np.linalg.norm(d)
+        if nrm > step_cap:
+            d *= step_cap / nrm
+            if verbose:
+                print(f"        step damped: |d| {nrm:.3e} -> {step_cap:.3e}")
         s[0] += d[0]; s[4] += d[1]
-    return s, 2*th, False
+
+    converged = (code == 'converged')
+    T = 2*th if np.isfinite(th) else np.nan
+    if return_info:
+        return s, T, converged, dict(code=code, n_iter=len(log), log=log)
+    return s, T, converged
 
 
 def halo_stability(state0, T, mu, circle_tol=1e-4):

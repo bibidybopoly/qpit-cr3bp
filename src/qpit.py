@@ -780,6 +780,30 @@ def converge_torus(U0, T, rho, mu, U_ref=None, C_target=None, free_rho=True,
                         newton_step keys plus 'amplitude'
       'C'             : mean Jacobi at exit
 
+    C_target -- READ THIS BEFORE SWEEPING EPSILON.  When left at None it is
+    taken from the SEED: C_target = mean_jacobi(U_seed).  The seed is
+    x_halo + eps * Re[e^{i theta} v_C], whose mean Jacobi differs from the
+    halo's by O(eps^2).  So a sweep over eps with C_target=None converges every
+    torus AT A DIFFERENT ENERGY, and any quantity compared across those rows
+    mixes the amplitude dependence with the energy dependence.
+
+    That is exactly what happened to the Week 8 amplitude sweep.  Its
+    'rho - rho0' column rises as eps^2 and reads as a positive
+    amplitude-frequency coefficient.  It is not one.  Holding energy fixed the
+    true coefficient is NEGATIVE, kappa = -11.08 in rho/2pi per A^2, confirmed
+    three ways: directly from a constant-C continuation, from the identity
+    kappa = c * drho_halo/dC against the Phase 2 halo family, and by rerunning
+    the eps sweep with C_target pinned.  The sweep column was measuring
+    drho/dC * dC/deps^2, which carries the opposite sign.
+
+    Nothing about the solver was wrong and the default is not changed here --
+    every Week 8 number stays reproducible.  What changes is that 'C_target' is
+    now returned, so a sweep that assumes fixed energy can see at a glance that
+    it is not getting it.  To pin the energy, pass the underlying orbit's value:
+
+        C_halo = qpit.jacobi_constant(orbit['state0'], mu)
+        converge_torus(..., C_target=C_halo)
+
     FAILURE CODES map onto the Week 8 taxonomy:
       'collapsed'  -- amplitude fell below collapse_frac of its initial value.
                       The constant curve v == x_halo solves the invariance
@@ -793,8 +817,9 @@ def converge_torus(U0, T, rho, mu, U_ref=None, C_target=None, free_rho=True,
     """
     _require_adapters()
     U0 = np.array(U0, dtype=float, copy=True)
+    C_seed = mean_jacobi(U0, mu)          # reported so a sweep can see it move
     if C_target is None:
-        C_target = mean_jacobi(U0, mu)
+        C_target = C_seed
     amp0 = curve_amplitude(U0)
     best = np.inf
     history = []
@@ -840,7 +865,8 @@ def converge_torus(U0, T, rho, mu, U_ref=None, C_target=None, free_rho=True,
 
     return dict(U0=U0, T=T, rho=rho, converged=(code == 'converged'),
                 code=code, history=history, C=mean_jacobi(U0, mu),
-                amplitude=curve_amplitude(U0), n_iter=len(history))
+                amplitude=curve_amplitude(U0), n_iter=len(history),
+                C_target=float(C_target), C_seed=float(C_seed))
 
 
 # =========================================================================
@@ -879,3 +905,514 @@ def stability_index(DG: np.ndarray) -> float:
     """
     R_u = float(np.abs(np.linalg.eigvals(DG)).max())   # one eigensolve, not two
     return float(0.5 * (R_u + 1.0 / R_u))
+
+
+# =========================================================================
+# SECTION 9 -- CONTINUATION  (Week 9)
+# =========================================================================
+# Section 6B left the first torus isolated only up to a 1-D nullspace: with
+# rho and T free and mean Jacobi pinned, the assembled system is
+# (6N + 3) x (6N + 2) of rank 6N + 1.  newton_step reports exactly that
+# (rank=187 at N=31), and least squares takes minimum-norm steps, so it sits
+# still.  Continuation is the act of choosing to move along that direction
+# instead, with one extra row fixing HOW FAR.
+#
+# MEASURED STRUCTURE at the converged torus (N=31, A=17.2 km):
+#   invariance block  (6N) x (6N+2) = 186 x 188
+#   zero singular values                      2
+#   nullity = (188 - 186) + 2                 4   <- the 4-D solution set
+#   latitudinal tangent in that nullspace     overlap 1.000000000000
+#   longitudinal tangent in that nullspace    overlap 1.000000000000
+#   directions left after projecting both out 2   <- the physical family
+#
+# So: 2 symmetries + 2 physical parameters, confirmed rather than assumed.
+# One phase constraint kills each symmetry; one parameter pin kills one
+# physical direction; the arclength row kills the last one.
+#
+# WHICH PARAMETER TO PIN.  Three consistent choices, and they are different
+# families, not different parameterisations of one family:
+#
+#   pin='rho'  constant frequency ratio.  omega_0 = 2pi/T and omega_1 =
+#              rho/T, so omega_1/omega_0 = rho/2pi and pinning rho pins the
+#              ratio exactly.  The family never approaches a resonance
+#              because it never moves in rho.  DEFAULT, per McCarthy &
+#              Howell -- and this is the family that reaches large amplitude.
+#   pin='C'    constant energy.  rho drifts with amplitude (measured
+#              +26 eps^2 rad on this orbit), so this family walks toward
+#              whatever rational rho is nearest and terminates there.  Kept
+#              because that drift is the mechanism the resonance study needs.
+#   pin='T'    constant mapping time.  Same termination problem as 'C'.
+#
+# NOT A CONTRADICTION WITH SECTION 6B.  That section says do not pin rho.
+# It means: do not pin rho AT THE LINEAR SEED VALUE WHILE ALSO PINNING C.
+# rho0 is read off the monodromy at zero amplitude and the true torus sits
+# O(eps^2) away, so demanding both is demanding a torus that does not exist,
+# and the residual stalls at O(eps^3).  Pinning rho ALONE, at the CONVERGED
+# value of an existing family member, with C free to move, is a different
+# and entirely consistent request: it asks for the torus of that rotation
+# number at whatever energy hosts it.  torus_tangent refuses to pin rho at a
+# value that did not come from a converged solve is not something code can
+# check -- so it is stated here instead, and the notebook checks it by
+# confirming the first family member reproduces its own seed.
+
+
+def pack_X(U0, T, rho):
+    """[U0 flattened, T, rho] -> (6N + 2,).  The continuation state vector."""
+    return np.concatenate([flatten_curve(U0), [float(T), float(rho)]])
+
+
+def unpack_X(X):
+    """Inverse of pack_X.  Returns (U0 (N,6), T, rho)."""
+    return unflatten_curve(X[:-2]), float(X[-2]), float(X[-1])
+
+
+# ---------------------------------------------------------------- resolution
+
+def fourier_tail(U):
+    """||C_k|| at the highest retained |k|, relative to the k=0 coefficient.
+
+    The cheap per-step resolution monitor.  offgrid_residual is the honest
+    check but costs N propagations; this costs one DFT, so it runs every
+    continuation step and offgrid_residual runs only on accepted members.
+
+    A converged curve should show this at the integrator noise floor
+    (2.85e-10 at N=31 on the first torus).  Once it climbs above ~1e-8 the
+    curve is no longer band-limited at this N and the invariance residual is
+    measuring the truncation, not the torus.
+
+    NORMALISED AGAINST THE FUNDAMENTAL (k = +/-1), NOT k = 0.  The k = 0
+    coefficient is the centre of the curve -- order 1 for an orbit near the
+    Moon -- while the whole shape of a 17 km torus lives at 1e-5.  Dividing
+    by k = 0 therefore reports a tail about 1e4 times healthier than it is,
+    and a refinement trigger set on it would never fire.
+    """
+    N = U.shape[0]
+    C = dft_matrix(N) @ U
+    mag = np.linalg.norm(C, axis=1)
+    k = np.abs(wavenumbers(N))
+    return float(mag[k == k.max()].max() / mag[k == 1].max())
+
+
+def resample_curve(U, N_new):
+    """Re-discretise a curve onto N_new nodes by zero-padding in Fourier space.
+
+    Exact for band-limited curves in both directions: padding adds modes that
+    were zero, truncating removes modes that are at the noise floor.  No
+    interpolation error is introduced, which is the whole reason the spectral
+    representation was chosen in Section 2.
+
+    Both N and N_new must be odd (convention 2).  Refining mid-family changes
+    the dimension of X, so any tangent held across the change is invalid and
+    must be recomputed -- continue_torus_family does that.
+    """
+    check_odd(N_new)
+    N = U.shape[0]
+    if N_new == N:
+        return U.copy()
+    C = dft_matrix(N) @ U                      # (N, 6) complex, symmetric k
+    k_old, k_new = wavenumbers(N), wavenumbers(N_new)
+    C_new = np.zeros((N_new, 6), dtype=complex)
+    keep = np.isin(k_old, k_new)
+    C_new[np.searchsorted(k_new, k_old[keep])] = C[keep]
+    return np.real(idft_matrix(N_new) @ C_new)
+
+
+# ------------------------------------------------------------------ assembly
+
+def _pin_row(pin, U0, T, rho, mu, target, n_extra):
+    """One parameter-pin row and its residual value.  Returns (row, value).
+
+    'C'   holds the mean Jacobi constant -- a dense row over the curve.
+    'rho' and 'T' are single unit entries in the parameter columns, already
+    unit-norm, so they bypass _constraint_row's rescaling.
+    """
+    N = U0.shape[0]
+    if pin == 'C':
+        return _constraint_row(mean_jacobi_row(U0, mu),
+                               mean_jacobi(U0, mu) - target, n_extra)
+    row = np.zeros(6 * N + n_extra)
+    if pin == 'T':
+        row[6 * N] = 1.0
+        return row, T - target
+    if pin == 'rho':
+        if n_extra < 2:
+            raise ValueError("pin='rho' requires rho to be a free variable")
+        row[6 * N + 1] = 1.0
+        return row, rho - target
+    raise ValueError(f"unknown pin {pin!r}; expected 'C', 'rho' or 'T'")
+
+
+def assemble_system(U0, T, rho, mu, U_ref=None, pin='C', pin_target=None,
+                    tangent=None, X_prev=None, ds=None, free_rho=True):
+    """The full least-squares system.  Returns (J, rvec, info).
+
+    Rows, in order:
+        6N  invariance                     rank 6N - 2
+         1  longitudinal phase             kills the flow-shift symmetry
+         1  latitudinal phase              kills the curve-relabel symmetry
+         1  parameter pin                  kills one physical direction
+         1  arclength   (only if tangent)  kills the last one
+
+    Columns: [U0 (6N) | T | rho], the last dropped when free_rho=False.
+
+    Without the arclength row this is the Week 8 system and carries a 1-D
+    nullspace -- which is precisely the object torus_tangent extracts.  With
+    it, rank rises to 6N + 2 and lstsq should report full column rank; that
+    jump (187 -> 188 at N=31) is the cheapest confirmation that the arclength
+    row is doing its job and is asserted in the notebook.
+
+    EQUIVALENCE.  With pin='C' and tangent=None this reproduces newton_step's
+    matrix and right-hand side exactly, bit for bit; tests assert it.
+    newton_step is deliberately left untouched so every Week 8 number stays
+    reproducible from the same code path that produced it.
+    """
+    if U_ref is None:
+        U_ref = U0
+    N = U0.shape[0]
+    n_extra = 2 if free_rho else 1
+
+    J_U0, J_T, J_rho, F = invariance_jacobian(U0, T, rho, mu)
+    cols = [J_U0, J_T[:, None]] + ([J_rho[:, None]] if free_rho else [])
+    rows, rhs = [np.hstack(cols)], [F]
+
+    tan0 = longitudinal_tangent(U_ref, T, rho, mu)
+    tan1 = latitudinal_tangent(U_ref)
+    dU = U0 - U_ref
+    phase_vals = []
+    for tan in (tan0, tan1):
+        val = float(np.sum(dU * tan))
+        phase_vals.append(val)
+        row, r = _constraint_row(flatten_curve(tan), val, n_extra)
+        rows.append(row[None, :]); rhs.append(np.array([r]))
+
+    if pin_target is None:
+        pin_target = dict(C=mean_jacobi(U0, mu), rho=rho, T=T)[pin]
+    row, r = _pin_row(pin, U0, T, rho, mu, pin_target, n_extra)
+    rows.append(row[None, :]); rhs.append(np.array([r]))
+
+    arclen = None
+    if tangent is not None:
+        X = pack_X(U0, T, rho) if free_rho else np.concatenate(
+            [flatten_curve(U0), [T]])
+        arclen = float(np.dot(X - X_prev, tangent)) - float(ds)
+        rows.append(tangent[None, :]); rhs.append(np.array([arclen]))
+
+    info = dict(res_inf=float(np.abs(F).max()), res_2=float(np.linalg.norm(F)),
+                phase0=phase_vals[0], phase1=phase_vals[1],
+                pin_err=float(r), arclen_err=arclen)
+    return np.vstack(rows), np.concatenate(rhs), info
+
+
+# ------------------------------------------------------------------- tangent
+
+def torus_tangent(U0, T, rho, mu, pin='rho', pin_target=None,
+                  prev_tangent=None, free_rho=True, gap_warn=1e3):
+    """Unit tangent to the 1-parameter family.  Returns (t, diag).
+
+    The tangent is the nullspace of the system WITHOUT the arclength row --
+    (6N+3) x (6N+2), rank 6N+1, nullity exactly 1 -- taken as the last right
+    singular vector.
+
+    COMPUTE IT FROM THE CONSTRAINED SYSTEM, NOT FROM THE INVARIANCE BLOCK.
+    The invariance block alone has nullity 4 (measured above), and two of
+    those four are the phase symmetries.  A "tangent" drawn from that space
+    would generically be a mixture, and the predictor would step along a
+    relabelling of the same curve -- amplitude unchanged, residual small,
+    a family that goes nowhere while looking healthy.  Including the phase
+    rows forces t orthogonal to both symmetry tangents, which is also what
+    makes the arclength row independent of the phase rows at the next step.
+
+    ORIENTATION.  Sign is continued from prev_tangent when given; otherwise
+    it is chosen so the curve amplitude increases, since the small-amplitude
+    end of every family here is the periodic orbit itself.
+
+    diag: 'sv_null' (should be ~0), 'sv_next' (should not be), 'gap',
+          't_rho', 't_T', 'dA_ds'.  A gap below gap_warn means the nullspace
+          is not cleanly 1-D -- a bifurcation, or a pin that is degenerate
+          with the family direction -- and the tangent is not trustworthy.
+    """
+    J, _, _ = assemble_system(U0, T, rho, mu, pin=pin, pin_target=pin_target,
+                              free_rho=free_rho)
+    sv, Vt = np.linalg.svd(J)[1:]
+    t = Vt[-1].copy()
+    gap = float(sv[-2] / sv[-1]) if sv[-1] > 0 else np.inf
+
+    # orientation: finite-difference the amplitude along +t, in units that
+    # move each node by ~1% of the curve's own amplitude.
+    A0 = curve_amplitude(U0)
+    tU = unflatten_curve(t[:U0.size])
+    move = np.max(np.linalg.norm(tU[:, :3], axis=1))
+    h = 0.01 * A0 / move if move > 0 else 0.0
+    dA_ds = (curve_amplitude(U0 + h * tU) - A0) / h if h > 0 else 0.0
+    if prev_tangent is not None:
+        if np.dot(t, prev_tangent) < 0:
+            t, dA_ds = -t, -dA_ds
+    elif dA_ds < 0:
+        t, dA_ds = -t, -dA_ds
+
+    diag = dict(sv_null=float(sv[-1]), sv_next=float(sv[-2]), gap=gap,
+                t_T=float(t[U0.size]),
+                t_rho=float(t[U0.size + 1]) if free_rho else 0.0,
+                dA_ds=float(dA_ds))
+    if gap < gap_warn:
+        diag['warning'] = (f"nullspace gap {gap:.2e} below {gap_warn:.0e}: "
+                           "tangent may be contaminated (bifurcation?)")
+    return t, diag
+
+
+# ------------------------------------------------------------------ corrector
+
+def correct_along_family(U0, T, rho, mu, U_ref, pin, pin_target,
+                         tangent=None, X_prev=None, ds=None, free_rho=True,
+                         tol=1e-11, itmax=12, rcond=RCOND_DEFAULT,
+                         step_limit_frac=0.5, verbose=False):
+    """Newton on the arclength-closed system.  Returns a result dict.
+
+    Differs from converge_torus in exactly two ways, both required:
+      * the constraint set is chosen by `pin` rather than hardwired to C;
+      * U_ref is the PREVIOUS CONVERGED MEMBER, not the iterate itself.
+
+    The second is what the phase constraints were designed for.  With
+    U_ref = U0 the constraints are identically zero and only restrain the
+    step; with U_ref a genuine previous member they carry a real value and
+    actively pull the new curve back to the same phase origin, which is what
+    keeps the family from drifting around the torus as it advances.
+
+    No collapse guard is needed here: the arclength row forbids standing
+    still, so the constant curve v == x_halo is no longer reachable.
+    """
+    U0 = np.array(U0, dtype=float, copy=True)
+    history = []
+    code = 'max_iter'
+    for it in range(itmax):
+        J, rvec, info = assemble_system(
+            U0, T, rho, mu, U_ref=U_ref, pin=pin, pin_target=pin_target,
+            tangent=tangent, X_prev=X_prev, ds=ds, free_rho=free_rho)
+        dx, _r, rank, sv = np.linalg.lstsq(J, -rvec, rcond=rcond)
+        info.update(rank=int(rank), step_norm=float(np.linalg.norm(dx)),
+                    amplitude=curve_amplitude(U0))
+        history.append(info)
+        if verbose:
+            print(f"    it{it:2d}: |F|inf={info['res_inf']:.3e} "
+                  f"|dx|={info['step_norm']:.2e} rank={info['rank']}")
+        if info['res_inf'] < tol:
+            code = 'converged'
+            break
+        if not np.isfinite(info['res_inf']):
+            code = 'nonfinite'
+            break
+        if it and info['res_inf'] > 10.0 * min(h['res_inf'] for h in history[:-1]):
+            code = 'diverged'
+            break
+
+        dU = unflatten_curve(dx[:U0.size])
+        move = np.max(np.linalg.norm(dU[:, :3], axis=1))
+        cap = step_limit_frac * max(curve_amplitude(U0), 1e-14)
+        scale = min(1.0, cap / move) if move > 0 else 1.0
+        U0 = U0 + scale * dU
+        T = T + scale * dx[U0.size]
+        if free_rho:
+            rho = rho + scale * dx[U0.size + 1]
+
+    return dict(U0=U0, T=T, rho=rho, converged=(code == 'converged'),
+                code=code, history=history, n_iter=len(history),
+                C=mean_jacobi(U0, mu), amplitude=curve_amplitude(U0),
+                res_inf=history[-1]['res_inf'])
+
+
+# --------------------------------------------------------------- family loop
+
+def continue_torus_family(U0, T, rho, mu, pin='rho', n_steps=40,
+                          ds=None, ds_frac=0.10, ds_min_frac=1e-3,
+                          ds_max_frac=1.0, it_target=3, tail_tol=1e-8,
+                          N_max=81, tol=1e-11, itmax=12, offgrid_every=1,
+                          verbose=True):
+    """Pseudo-arclength continuation of a converged torus into a family.
+
+    START FROM A CONVERGED TORUS.  The pin target is read off the state you
+    pass in, so passing a seed instead of a solution pins the wrong value --
+    for pin='rho' that is exactly the Section 6B mistake, one level up.
+
+    STEP SIZE is expressed as a fraction of the curve's own amplitude:
+    ds = ds_frac * A * sqrt(N) makes each node move by about ds_frac * A,
+    which is scale-free and so needs no retuning as the family grows by three
+    orders of magnitude.  It adapts on the Newton iteration count -- grow by
+    1.5 when a step converges in <= it_target, halve and retry when it fails.
+
+    RESOLUTION is monitored by fourier_tail every step.  Above tail_tol the
+    curve has outgrown its node count, so N is raised by 10 (odd -> odd), the
+    member is re-converged at the new N, and the tangent is recomputed --
+    it must be, since X changed dimension.
+
+    Returns dict with 'members' (list of per-torus records), 'pin',
+    'pin_target', 'terminated' (why the loop stopped).  Each member record
+    carries U0, T, rho, C, amplitude, N, res_inf, offgrid, tail, n_iter, ds.
+    """
+    _require_adapters()
+    U0 = np.array(U0, dtype=float, copy=True)
+    pin_target = dict(C=mean_jacobi(U0, mu), rho=rho, T=T)[pin]
+
+    def record(U, T_, r_, extra):
+        rec = dict(U0=U.copy(), T=T_, rho=r_, C=mean_jacobi(U, mu),
+                   amplitude=curve_amplitude(U), N=U.shape[0],
+                   tail=fourier_tail(U))
+        rec.update(extra)
+        return rec
+
+    t, tdiag = torus_tangent(U0, T, rho, mu, pin=pin, pin_target=pin_target)
+    members = [record(U0, T, rho, dict(
+        res_inf=float(np.abs(invariance_residual(U0, T, rho, mu)).max()),
+        offgrid=offgrid_residual(U0, T, rho, mu), n_iter=0, ds=0.0,
+        tangent_gap=tdiag['gap']))]
+    if verbose:
+        m = members[0]
+        print(f"pin={pin} at {pin_target:.12f}   tangent gap {tdiag['gap']:.2e}"
+              f"   dA/ds {tdiag['dA_ds']:+.3e}")
+        print(f"{'step':>4} {'N':>3} {'A [km]':>10} {'C':>14} {'rho/2pi':>11} "
+              f"{'|F|inf':>10} {'tail':>9} {'its':>4} {'ds':>9}")
+        print(f"{0:4d} {m['N']:3d} {m['amplitude']*384400:10.2f} {m['C']:14.9f} "
+              f"{m['rho']/(2*np.pi):11.8f} {m['res_inf']:10.2e} "
+              f"{m['tail']:9.1e} {0:4d} {0.0:9.2e}")
+
+    N = U0.shape[0]
+    ds = ds_frac * curve_amplitude(U0) * np.sqrt(N) if ds is None else ds
+    terminated = 'n_steps'
+
+    for step in range(1, n_steps + 1):
+        prev = members[-1]
+        ds_floor = ds_min_frac * prev['amplitude'] * np.sqrt(prev['N'])
+        ds_ceil = ds_max_frac * prev['amplitude'] * np.sqrt(prev['N'])
+        ds = min(ds, ds_ceil)
+        accepted = None
+
+        while ds >= ds_floor:
+            X_prev = pack_X(prev['U0'], prev['T'], prev['rho'])
+            Xp = X_prev + ds * t
+            Up, Tp, rp = unpack_X(Xp)
+            out = correct_along_family(
+                Up, Tp, rp, mu, U_ref=prev['U0'], pin=pin,
+                pin_target=pin_target, tangent=t, X_prev=X_prev, ds=ds,
+                tol=tol, itmax=itmax, verbose=False)
+            if out['converged']:
+                accepted = out
+                break
+            ds *= 0.5
+
+        if accepted is None:
+            terminated = 'ds_underflow'
+            break
+
+        U0, T, rho = accepted['U0'], accepted['T'], accepted['rho']
+        tail = fourier_tail(U0)
+
+        if tail > tail_tol and U0.shape[0] < N_max:
+            N_new = U0.shape[0] + 10
+            U0 = resample_curve(U0, N_new)
+            out2 = correct_along_family(U0, T, rho, mu, U_ref=U0, pin=pin,
+                                        pin_target=pin_target, tol=tol,
+                                        itmax=itmax)
+            if not out2['converged']:
+                terminated = f'refine_failed_at_N={N_new}'
+                break
+            U0, T, rho = out2['U0'], out2['T'], out2['rho']
+            accepted['n_iter'] += out2['n_iter']
+            t = None                        # dimension changed; tangent void
+
+        og = (offgrid_residual(U0, T, rho, mu)
+              if offgrid_every and step % offgrid_every == 0 else np.nan)
+        members.append(record(U0, T, rho, dict(
+            res_inf=accepted['res_inf'], offgrid=og,
+            n_iter=accepted['n_iter'], ds=ds)))
+
+        t, tdiag = torus_tangent(U0, T, rho, mu, pin=pin,
+                                 pin_target=pin_target, prev_tangent=t)
+        members[-1]['tangent_gap'] = tdiag['gap']
+
+        if verbose:
+            m = members[-1]
+            print(f"{step:4d} {m['N']:3d} {m['amplitude']*384400:10.2f} "
+                  f"{m['C']:14.9f} {m['rho']/(2*np.pi):11.8f} "
+                  f"{m['res_inf']:10.2e} {m['tail']:9.1e} "
+                  f"{m['n_iter']:4d} {ds:9.2e}")
+
+        if accepted['n_iter'] <= it_target:
+            ds *= 1.5
+
+    return dict(members=members, pin=pin, pin_target=pin_target,
+                terminated=terminated, mu=mu)
+
+
+# =========================================================================
+# SECTION 10 -- TORUS INVARIANT BUNDLES  (Week 9, manifolds)
+# =========================================================================
+
+def torus_bundle(U0, T, rho, mu, which='unstable', n_power=12, DG=None):
+    """Real unstable (or stable) direction attached to each node.  (N, 6).
+
+    THE BUNDLE EQUATION.  Writing DG = (R(-rho) kron I) Phi_tilde and reading
+    an eigenvector w as a curve of vectors w(theta_j), DG w = lambda w says
+
+        Dphi_T( u(theta) ) w(theta) = lambda w(theta + rho)
+
+    -- the direction is transported by the STM but lands one rotation further
+    round the curve, not back on itself.  That is why this is a bundle
+    problem and not a per-node eigenproblem, and why the eigenvalues come in
+    circles: if w solves it then e^{i k theta} w solves it with
+    lambda e^{-i k rho}, so each real bundle contributes N eigenvalues of
+    equal modulus.
+
+    WHY POWER ITERATION AND NOT eig(DG).  The circle structure means the
+    dominant eigenvalue is N-fold degenerate in modulus, and numpy hands back
+    complex eigenvectors whose per-node phase is arbitrary -- reassembling a
+    real bundle from one of them means undoing a phase that differs node to
+    node.  Iterating DG on a real curve avoids the question entirely: it
+    stays real throughout and converges to the dominant real bundle at a rate
+    set by the modulus gap, which here is R_u : 1 = 146 : 1, so 12 iterations
+    leave 1e-26.  For 'stable', iterate the inverse map.
+
+    Returns (V, R) with V of shape (N, 6), unit rows, and R the measured
+    growth factor per application -- which should reproduce the radius behind
+    stability_index, giving an independent check on both.
+    """
+    _require_adapters()
+    N = U0.shape[0]
+    if DG is None:
+        DG = stability_matrix(U0, T, rho, mu)
+    M = DG if which == 'unstable' else np.linalg.inv(DG)
+    rng = np.random.default_rng(0)           # fixed: the bundle is unique
+    v = rng.standard_normal(6 * N)
+    v /= np.linalg.norm(v)
+    R = np.nan
+    for _ in range(n_power):
+        w = M @ v
+        R = float(np.linalg.norm(w))
+        v = w / R
+    V = unflatten_curve(v)
+    V /= np.linalg.norm(V, axis=1)[:, None]
+    return V, (R if which == 'unstable' else 1.0 / R)
+
+
+def torus_manifold(U0, T, rho, mu, V, d=1e-6, n_periods=4.0, side=+1,
+                   n_out=400, which='unstable'):
+    """Globalise one branch of a torus manifold.  Returns a list of N arrays.
+
+    Each node is displaced by side * d along its bundle direction and
+    propagated -- forward for the unstable branch, backward for the stable
+    one.  Same construction as the periodic-orbit manifolds in Phase 2, with
+    the eigenvector of a single monodromy matrix replaced by the bundle.
+
+    d is a displacement in nondimensional units; 1e-6 is about 0.4 km, which
+    sits above the 1e-10 residual floor and well inside the linear regime for
+    a torus of this amplitude.  Check that halving d leaves the globalised
+    surface unchanged before trusting a picture of it.
+    """
+    sgn = 1.0 if which == 'unstable' else -1.0
+    tf = sgn * n_periods * T
+    ts = np.linspace(0.0, tf, n_out)
+    strands = []
+    for j in range(U0.shape[0]):
+        x0 = U0[j] + side * d * V[j]
+        sol = _solve_ivp(_cr3bp_rhs_3d, [0.0, tf], x0, args=(mu,),
+                         t_eval=ts, **_INTEGRATOR)
+        strands.append(sol.y.T)
+    return strands

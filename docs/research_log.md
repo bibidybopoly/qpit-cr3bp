@@ -1015,3 +1015,38 @@
 \*\*Next session:\*\*
 
 \- QPIT Continuation
+
+
+
+\## 2026-08-05
+
+
+\*\*Worked on:\*\* 
+
+\- QPIT Continuation
+
+
+
+\*\*Reading completed:\*\*
+
+\- Generated the first QPIT family of this project
+\- Contiuning off a found QPIT is easier than generating one from a guess
+
+\- Generated 23 members of a constant rotation number family
+\- Amplitudes ranged from 17 to 890 km
+
+\- Generated 17 members of a constant energy family
+\- Amplitudes ranged from 17 to 515 km
+
+\- Also generated the stability and manifolds of one torus
+\- This was mainly trivial given that GMOS gives the information needed to find this
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- Data-set generation
