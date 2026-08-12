@@ -1018,7 +1018,7 @@
 
 
 
-\## 2026-08-05
+\## 2026-08-06
 
 
 \*\*Worked on:\*\* 
@@ -1050,3 +1050,98 @@
 \*\*Next session:\*\*
 
 \- Data-set generation
+
+
+
+\## 2026-08-07
+
+
+\*\*Worked on:\*\* 
+
+\- QPIT Data-set generation
+
+
+
+\*\*Reading completed:\*\*
+
+\- Today, I spent my time preparing for the date-set generation
+\- While preparing I arrived at a few conclusions
+
+\- If I just continue through a family of QPITs and label that as positives and then generate a box of points around L2 as negatives, then the dataset would be horrible
+\- The neural network might just learn what points are near the L2 halo
+\- Or there might be false negatives: the random points generated in between generated QPITs might be able to seed a new QPIT but if immediately labeled as a negative it introduces error into the dataset
+\- To solve these problems, negatives will be random samples from conditions similar to those of the QPITs and they will be tested to see if they do correctly seed a QPIT
+\- Also, I will generate QPITs around both L2 and L1 and at different energy levels
+\- This will ensure the network actually learns what conditions give a QPIT or not
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Data-set generation
+
+
+
+\## 2026-08-09
+
+
+\*\*Worked on:\*\* 
+
+\- QPIT Data-set generation
+
+
+
+\*\*Reading completed:\*\*
+
+\- Today, was big reframe
+
+\- I decided that the model that is being developed by this project will not identify tori but instead predict the distance to the nearest tori
+\- This decision was largely made on the grounds that it was impossible to generate usable negatives for the data set
+\- It was simply too difficult to say that certain starting conditions were guaranteed to not to give a torus
+\- The tori live on a 3d sheet where anywhere on the sheet gives a torus and anywhere that doesn't doesn't
+\- So a model that predicts how close you are to the nearest torus or how close to the sheet would be so much more effective
+
+\- Now that the final model will predict the distance to the nearest tori it might actually be more useful for seeding a torus solver
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- QPIT Data-set generation
+
+
+
+\## 2026-08-011
+
+
+\*\*Worked on:\*\* 
+
+\- QPIT Data-set generation
+
+
+
+\*\*Reading completed:\*\*
+
+\- I completed the QPIT data-set
+\- The generation took a while on my computer but not too long
+\- This was the most difficult part of the project done
+\- QPITs are really high level and I've learned a lot up until this point
+\- Im now essentially in the home stretch and the primary part of the research: training of the model
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- Neural network design and training
