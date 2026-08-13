@@ -1170,3 +1170,32 @@
 \*\*Next session:\*\*
 
 \- Neural network design and training
+
+
+
+\## 2026-08-13
+
+
+\*\*Worked on:\*\* 
+
+\- First Regressor
+
+
+
+\*\*Reading completed:\*\*
+
+\- Developed, trained, and tested the first regressor
+\- Learned that there is a resolution floor for the regressor
+\- Below around 10^2 meters, the network stops closing in
+\- This regressor had a median error of 6.3x
+\- This model shows that the data-set is learnable but the model itself is not useful and has real limits
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- Making network more accurate
