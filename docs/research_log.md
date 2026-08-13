@@ -1119,7 +1119,7 @@
 
 
 
-\## 2026-08-011
+\## 2026-08-11
 
 
 \*\*Worked on:\*\* 
@@ -1135,6 +1135,31 @@
 \- This was the most difficult part of the project done
 \- QPITs are really high level and I've learned a lot up until this point
 \- Im now essentially in the home stretch and the primary part of the research: training of the model
+
+
+
+\*\*Stuck on / questions:\*\*
+
+
+
+\*\*Next session:\*\*
+
+\- Neural network design and training
+
+
+
+\## 2026-08-12
+
+
+\*\*Worked on:\*\* 
+
+\- Neural Network design
+
+
+
+\*\*Reading completed:\*\*
+
+\- Watched episodes 1-4 of 3Blue1Brown's seires over neural networks
 
 
 
