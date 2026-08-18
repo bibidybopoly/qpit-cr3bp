@@ -1,7 +1,16 @@
-"""Tests for the CR3BP module — verifies known physical properties."""
+"""Tests for the CR3BP module — verifies known physical properties.
 
+Run: pytest tests/test_cr3bp.py -v   (or python tests/test_cr3bp.py)
+"""
+
+import sys, os
 import numpy as np
-from cr3bp import cr3bp_rhs, integrate_with_stm, jacobi_constant, find_lagrange_points, MU_EARTH_MOON
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                '..', 'src'))
+
+from cr3bp import (cr3bp_rhs, integrate_with_stm, jacobi_constant,  # noqa: E402
+                   find_lagrange_points, MU_EARTH_MOON)
 
 
 def test_lagrange_points_match_published():
@@ -51,3 +60,30 @@ def test_stm_matches_finite_differences():
         dx_actual = sol_pert.y[:, -1] - ref_final
         dx_predicted = Phi @ dx0
         assert np.max(np.abs(dx_actual - dx_predicted)) < 1e-6, f"STM failed for component {j}"
+
+
+def test_mu_agrees_across_every_module_that_defines_it():
+    """mu has three homes; they must hold the SAME double, not merely close ones.
+
+    `features.py` keeps its own copy on purpose (it stays independent of
+    cr3bp_3d so it can cross-check the C convention), and that copy was once
+    truncated to 0.012150585609624 -- 23 ULP low, enough to shift a computed
+    Jacobi constant by ~4e-16 and make an exact feature-C vs solver-C
+    comparison fail for a reason nobody would find.  Exact equality, not
+    np.isclose: the whole point is the last bits.
+    """
+    from cr3bp_3d import MU_EARTH_MOON as MU_3D
+    from features import MU_EARTH_MOON as MU_FEAT
+
+    assert MU_EARTH_MOON == MU_3D == MU_FEAT, (
+        f"mu disagrees: cr3bp={MU_EARTH_MOON!r} cr3bp_3d={MU_3D!r} "
+        f"features={MU_FEAT!r}")
+    assert MU_EARTH_MOON == 0.01215058560962404
+
+
+if __name__ == '__main__':
+    fns = [(k, v) for k, v in sorted(globals().items()) if k.startswith('test_')]
+    ok = 0
+    for name, fn in fns:
+        fn(); ok += 1; print(f"  ok  {name}")
+    print(f"{ok}/{len(fns)} passed")

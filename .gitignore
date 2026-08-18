@@ -57,3 +57,7 @@ logs/
 *.out
 *.err
 slurm-*
+
+# Claude Code project instructions -- local, not shared
+CLAUDE.md
+.claude/

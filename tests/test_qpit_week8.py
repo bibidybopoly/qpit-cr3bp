@@ -1,39 +1,46 @@
+"""Week 8 QPIT tests.
+
+Run: pytest tests/test_qpit_week8.py -v   (or python tests/test_qpit_week8.py)
+
+No pytest dependency: the module-scoped `halo` fixture this file used to carry
+was the only `import pytest` in the suite, and it made the file the only one
+that could not run under the standalone runner.  A plain module-level constant
+is exactly equivalent -- the fixture returned a literal and nothing mutates it.
+"""
+
 import sys
 import os
 
 import numpy as np
-import pytest
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                '..', 'src'))
 
 from cr3bp_3d import MU_EARTH_MOON as MU, halo_stability   # noqa: E402
 import qpit                                                # noqa: E402
 
 
 # ---------------------------------------------------------------------------
-# Fixtures
+# The Week 8 target orbit
 # ---------------------------------------------------------------------------
 
-@pytest.fixture(scope='module')
-def halo():
-    """L2 halo #29 -- the Week 8 target.
-
-    C = 3.060334, rho/2pi = 0.293229, hyperbolic multiplier 146.4.
-
-    Hardcoded rather than rebuilt from orbits.compute_halo_family so the suite
-    stays fast and independent of continuation settings. Regenerated from a
-    Richardson L2 seed (Az = 0.03) corrected by halo_corrector, then pseudo-
-    arclength continuation at ds = 0.004; the target came out at index 75 of
-    that family, so the INDEX is not portable but the orbit is. Southern
-    branch (z0 < 0); the family is symmetric in z.
-
-    If these ever need refreshing, the identifying pair is (C, rho/2pi), not
-    the index.
-    """
-    state0 = np.array([1.043805201996, 0.0, -0.075586294085,
-                       0.0, 0.392206924669, 0.0])
-    T0 = 3.131511429611
-    return dict(state0=state0.tolist(), period=T0)
+#: L2 halo #29 -- the Week 8 target.
+#:
+#: C = 3.060334, rho/2pi = 0.293229, hyperbolic multiplier 146.4.
+#:
+#: Hardcoded rather than rebuilt from orbits.compute_halo_family so the suite
+#: stays fast and independent of continuation settings. Regenerated from a
+#: Richardson L2 seed (Az = 0.03) corrected by halo_corrector, then pseudo-
+#: arclength continuation at ds = 0.004; the target came out at index 75 of
+#: that family, so the INDEX is not portable but the orbit is. Southern
+#: branch (z0 < 0); the family is symmetric in z.
+#:
+#: If these ever need refreshing, the identifying pair is (C, rho/2pi), not
+#: the index.  Read-only: `qpit.seed_from_halo` and `halo_stability` both
+#: only read from it, so one shared dict is safe.
+HALO = dict(state0=[1.043805201996, 0.0, -0.075586294085,
+                    0.0, 0.392206924669, 0.0],
+            period=3.131511429611)
 
 
 # ---------------------------------------------------------------------------
@@ -72,15 +79,15 @@ def test_jacobi_gradient_matches_finite_difference():
 # 2. Seed sign convention
 # ---------------------------------------------------------------------------
 
-def test_seed_residual_is_second_order(halo):
+def test_seed_residual_is_second_order():
     """The derived seed leaves an O(eps^2) residual, the flipped one O(eps).
 
     This is the test that catches a seed/residual convention mismatch. Run at
     small eps: the quadratic coefficient is ~1e3, so the two regimes only
     separate below eps ~ 1e-3.
     """
-    state0 = np.asarray(halo['state0'], float)
-    T0 = halo['period']
+    state0 = np.asarray(HALO['state0'], float)
+    T0 = HALO['period']
     c = halo_stability(state0, T0, MU)['center']
     v = qpit.canonical_eigenvector_phase(c['vec'])
     rho = qpit.seed_rho(c['mu'])
@@ -112,7 +119,7 @@ def test_seed_residual_is_second_order(halo):
 # 3. Rank deficiency of the invariance block
 # ---------------------------------------------------------------------------
 
-def test_invariance_block_rank_deficiency_is_two(halo):
+def test_invariance_block_rank_deficiency_is_two():
     """Exactly two singular values collapse at a converged torus.
 
     Structural prediction: the solution set is 4-dimensional in [U0, T, rho]
@@ -120,7 +127,7 @@ def test_invariance_block_rank_deficiency_is_two(halo):
     rank 6N - 2. Verified by the size of the gap in the spectrum.
     """
     N = 15
-    U0, T, rho = qpit.seed_from_halo(halo, MU, N, 1e-4)
+    U0, T, rho = qpit.seed_from_halo(HALO, MU, N, 1e-4)
     out = qpit.converge_torus(U0, T, rho, MU, tol=1e-12, itmax=15, verbose=False)
     assert out['converged'], out['code']
 
@@ -136,9 +143,9 @@ def test_invariance_block_rank_deficiency_is_two(halo):
 # 4. Convergence and the properties of the result
 # ---------------------------------------------------------------------------
 
-def test_first_torus_converges_and_is_a_torus(halo):
+def test_first_torus_converges_and_is_a_torus():
     N = 31
-    U0, T, rho = qpit.seed_from_halo(halo, MU, N, 1e-4)
+    U0, T, rho = qpit.seed_from_halo(HALO, MU, N, 1e-4)
     out = qpit.converge_torus(U0, T, rho, MU, tol=1e-12, itmax=15, verbose=False)
 
     assert out['converged'], out['code']
@@ -157,11 +164,11 @@ def test_first_torus_converges_and_is_a_torus(halo):
     assert out['amplitude'] > 0.5 * qpit.curve_amplitude(U0)
 
 
-def test_wrong_sign_seed_collapses(halo):
+def test_wrong_sign_seed_collapses():
     """The flipped seed falls into v == x_halo, which solves the invariance
     equation for any rho. Amplitude, not residual, is what reveals it."""
-    state0 = np.asarray(halo['state0'], float)
-    T0 = halo['period']
+    state0 = np.asarray(HALO['state0'], float)
+    T0 = HALO['period']
     c = halo_stability(state0, T0, MU)['center']
     v = qpit.canonical_eigenvector_phase(c['vec'])
     rho = qpit.seed_rho(c['mu'])
@@ -176,7 +183,7 @@ def test_wrong_sign_seed_collapses(halo):
     assert out['amplitude'] < 0.5 * qpit.curve_amplitude(U_bad)
 
 
-def test_pinning_rho_leaves_a_cubic_floor(halo):
+def test_pinning_rho_leaves_a_cubic_floor():
     """Holding rho at the linear value over-constrains the system.
 
     rho at the seed is the zero-amplitude rotation number; the real torus is
@@ -186,7 +193,7 @@ def test_pinning_rho_leaves_a_cubic_floor(halo):
     """
     floors = []
     for N in (15, 31):
-        U0, T, rho = qpit.seed_from_halo(halo, MU, N, 1e-3)
+        U0, T, rho = qpit.seed_from_halo(HALO, MU, N, 1e-3)
         out = qpit.converge_torus(U0, T, rho, MU, tol=1e-13, itmax=10,
                                   free_rho=False, verbose=False)
         floors.append(out['history'][-1]['res_inf'])
@@ -196,7 +203,7 @@ def test_pinning_rho_leaves_a_cubic_floor(halo):
         "floor moved with N — that would make it truncation, not inconsistency")
 
     # and freeing rho must clear it
-    U0, T, rho = qpit.seed_from_halo(halo, MU, 31, 1e-3)
+    U0, T, rho = qpit.seed_from_halo(HALO, MU, 31, 1e-3)
     free = qpit.converge_torus(U0, T, rho, MU, tol=1e-12, itmax=15, verbose=False)
     assert free['converged']
     assert free['history'][-1]['res_inf'] < 1e-11
@@ -206,18 +213,26 @@ def test_pinning_rho_leaves_a_cubic_floor(halo):
 # 5. Spectral machinery
 # ---------------------------------------------------------------------------
 
-def test_evaluate_curve_reproduces_nodes(halo):
+def test_evaluate_curve_reproduces_nodes():
     N = 15
-    U0, _, _ = qpit.seed_from_halo(halo, MU, N, 1e-3)
+    U0, _, _ = qpit.seed_from_halo(HALO, MU, N, 1e-3)
     back = qpit.evaluate_curve(U0, qpit.node_angles(N))
     assert np.allclose(back, U0, atol=1e-12)
 
 
-def test_rotation_operator_matches_interpolation(halo):
+def test_rotation_operator_matches_interpolation():
     """R(rho) U and evaluate_curve(U, theta + rho) must agree exactly."""
     N = 15
-    U0, _, _ = qpit.seed_from_halo(halo, MU, N, 1e-3)
+    U0, _, _ = qpit.seed_from_halo(HALO, MU, N, 1e-3)
     rho = 0.7
     lhs = qpit.rotation_operator(N, rho) @ U0
     rhs = qpit.evaluate_curve(U0, qpit.node_angles(N) + rho)
     assert np.allclose(lhs, rhs, atol=1e-12)
+
+
+if __name__ == '__main__':
+    fns = [(k, v) for k, v in sorted(globals().items()) if k.startswith('test_')]
+    ok = 0
+    for name, fn in fns:
+        fn(); ok += 1; print(f"  ok  {name}")
+    print(f"{ok}/{len(fns)} passed")

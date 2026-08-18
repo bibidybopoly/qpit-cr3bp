@@ -1,4 +1,5 @@
 import json
+import os
 
 def _lines(s):
     ls = s.strip("\n").split("\n")
@@ -10,6 +11,71 @@ def md(s):
 def code(s):
     return dict(cell_type="code", metadata={}, execution_count=None,
                 outputs=[], source=_lines(s))
+
+
+def write_notebook(nb, out_path):
+    """Write `nb` to `out_path`, but NEVER silently clobber a diverged notebook.
+
+    This builder used to write unconditionally.  On 2026-08-16 that discarded a
+    notebook carrying five cells of hand-applied corrections -- including the
+    epoch-budget fix the retraction turned on -- together with every executed
+    output, because the builder had drifted behind the notebook and nobody
+    diffed before running it.
+
+    Rules:
+      * nothing on disk        -> write.
+      * cell sources identical -> DO NOT write.  A rewrite would be a no-op on
+                                  the source and would strip executed outputs,
+                                  which is a silent loss of work.
+      * cell sources differ    -> refuse, print the divergence, exit 1.  Pass
+                                  --force to overwrite anyway.
+    """
+    import difflib
+    import sys
+
+    def sources(cs):
+        return [''.join(c['source']) if isinstance(c['source'], list)
+                else c['source'] for c in cs]
+
+    name = os.path.basename(out_path)
+    force = '--force' in sys.argv
+
+    if os.path.exists(out_path) and not force:
+        with open(out_path, encoding='utf-8') as fh:
+            disk = json.load(fh)
+        old, new = sources(disk['cells']), sources(nb['cells'])
+        n_out = sum(len(c.get('outputs', [])) for c in disk['cells']
+                    if c['cell_type'] == 'code')
+
+        if old == new:
+            print(f"{name}: already up to date ({len(new)} cells, "
+                  f"{n_out} executed outputs preserved) -- not rewriting")
+            return
+
+        print(f"REFUSING TO OVERWRITE {name}")
+        print(f"  on disk : {len(old)} cells, {n_out} executed outputs")
+        print(f"  builder : {len(new)} cells")
+        print("  The notebook on disk has content this builder would destroy.\n")
+        for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
+                None, old, new).get_opcodes():
+            if tag == 'equal':
+                continue
+            print(f"  {tag.upper()}  disk[{i1}:{i2}] -> builder[{j1}:{j2}]")
+            for k in range(i1, i2):
+                print(f"      - disk    cell {k}: "
+                      f"{old[k].strip().splitlines()[0][:84]}")
+            for k in range(j1, j2):
+                print(f"      + builder cell {k}: "
+                      f"{new[k].strip().splitlines()[0][:84]}")
+        print(f"\n  Port the notebook's version into this builder, or re-run "
+              f"with --force\n  to discard it.  It is in git:  "
+              f"git checkout -- notebooks/{name}")
+        raise SystemExit(1)
+
+    with open(out_path, 'w', encoding='utf-8') as f:
+        json.dump(nb, f, indent=1)
+    print(f"wrote {out_path}: {len(nb['cells'])} cells")
+
 
 cells = []
 
@@ -539,7 +605,13 @@ ended the fit rather than convergence and the number below is a lower bound.
 """.rstrip()))
 
 cells.append(code(r"""
-cfg = MLPConfig(hidden=(256, 256, 256), activation='silu')
+# BUDGET, NOT TUNING. The first run ended all three seeds at the epoch ceiling
+# (best epochs 589/598/595 of 600) with validation loss still falling, so its
+# R2 was a lower bound and its seed spread (0.17) exceeded the M1-B1 gap (0.13).
+# Architecture, lr and batch size are unchanged; only the stopping rule moves.
+cfg = MLPConfig(hidden=(256, 256, 256), activation='silu',
+                max_epochs=3000, patience=150, lr_patience=50)
+print("expect ~30-45 min for this cell plus the learning curve")
 t1 = time.time()
 P, H = train_multi_seed(Z[tr], y[tr], Z[va], y[va], Z[te], cfg,
                         seeds=SEEDS_MODEL, verbose=True)
@@ -591,18 +663,26 @@ session.
 """.rstrip()))
 
 cells.append(code(r"""
+from dataclasses import replace
+
 FRACS = (0.10, 0.25, 0.50, 1.00)
 lc = []
 for f in FRACS:
     sub = subsample_groups(D['group_id'], tr, f, seed=SEED_SPLIT)
-    mdl, h = train_mlp(Z[sub], y[sub], Z[va], y[va], cfg, seed=SEEDS_MODEL[0])
+    # An epoch is not a fixed amount of work.  At batch 256 the 10% fold ran
+    # five steps per epoch and never left the mean predictor (train RMSE 1.796
+    # vs B0's 1.851) -- that was a failed fit being read as a data-size result.
+    n_sub = int(sub.sum())
+    cfg_f = replace(cfg, batch_size=int(min(cfg.batch_size, max(32, n_sub // 25))))
+    mdl, h = train_mlp(Z[sub], y[sub], Z[va], y[va], cfg_f, seed=SEEDS_MODEL[0])
     m_te = regression_metrics(y[te], predict(mdl, Z[te], h))
     m_tr = regression_metrics(y[sub], predict(mdl, Z[sub], h))
     lc.append(dict(frac=f, n_groups=int(len(np.unique(D['group_id'][sub]))),
                    n_rows=int(sub.sum()), train_rmse=m_tr['rmse'],
                    test_rmse=m_te['rmse'], test_r2=m_te['r2'],
-                   budget_limited=h['hit_max_epochs']))
-    print(f"  {f:5.0%}  rows {sub.sum():6d}  train RMSE {m_tr['rmse']:.4f}  "
+                   batch=cfg_f.batch_size, budget_limited=h['hit_max_epochs']))
+    print(f"  {f:5.0%}  rows {sub.sum():6d}  batch {cfg_f.batch_size:4d}  "
+          f"train RMSE {m_tr['rmse']:.4f}  "
           f"test RMSE {m_te['rmse']:.4f}  test R2 {m_te['r2']:+.4f}")
 
 fig, ax = plt.subplots(figsize=(6.2, 4.2))
@@ -670,36 +750,68 @@ phase-space error map is Week 12; this is only enough to score P3.
 """.rstrip()))
 
 cells.append(code(r"""
-rb = residual_bins(y[te], p_m1, n_bins=12)
+# MEASURED ROWS ONLY. 13% of the test set is pinned at the floor, all of it in
+# the smallest-d bins, and left-censoring produces a large positive bias there
+# mechanically. Scoring P3 on all rows confounds the two.
+rb = residual_bins(y[te][~fl], p_m1[~fl], n_bins=12)
+print("measured rows only (at_floor excluded):")
 print(format_table(rb, ['bin_lo', 'bin_hi', 'n', 'bias', 'rmse', 'mae']))
+
+ctr = np.array([(r['bin_lo'] + r['bin_hi']) / 2 for r in rb])
+bias_b = np.array([r['bias'] for r in rb])
+rmse_b = np.array([r['rmse'] for r in rb])
+sd_b = np.sqrt(np.maximum(rmse_b ** 2 - bias_b ** 2, 0.0))   # RMSE^2 = bias^2 + var
+
+# IS THERE A DEAD ZONE?  Under mean reversion pred = mu + lam*(y-mu), so
+# bias + centre = mu + (lam-1)*... is NOT flat unless lam = 0.  A flat
+# (bias + centre) therefore means the model emits a CONSTANT and ignores the
+# input over those bins -- a stronger failure than smoothing, and the thing to
+# measure.  RMSE alone cannot see it, which is why residual SD is reported.
+implied = bias_b + ctr
+k = 1
+while k < len(implied) and np.ptp(implied[:k + 1]) < 0.10:
+    k += 1
+print(f"\nimplied constant output per bin (bias + centre):")
+print("  " + "  ".join(f"{v:+.3f}" for v in implied))
+if k >= 3:
+    slope = np.polyfit(ctr[:k], bias_b[:k], 1)[0]
+    c0 = float(implied[:k].mean())
+    print(f"\nDEAD ZONE: first {k} bins are flat to {np.ptp(implied[:k]):.3f}")
+    print(f"  bias-vs-centre slope {slope:+.3f} (-1 means the output ignores the input)")
+    print(f"  constant output {c0:+.3f} log10 km = {10**c0*1e3:.1f} m")
+    print(f"  boundary {rb[k-1]['bin_hi']:+.3f} log10 km = "
+          f"{10**rb[k-1]['bin_hi']*1e3:.0f} m -- below this the regressor does "
+          f"not respond to the state")
+else:
+    print("\nno flat prefix: the near field is tracked, not abandoned")
+
+near, far = [r for r in rb if r['n'] > 0][:3], [r for r in rb if r['n'] > 0][-3:]
+nb = float(np.mean([r['bias'] for r in near])); fb = float(np.mean([r['bias'] for r in far]))
+nr = float(np.mean([r['rmse'] for r in near])); fr = float(np.mean([r['rmse'] for r in far]))
+nsd = float(np.sqrt(max(nr ** 2 - nb ** 2, 0))); fsd = float(np.sqrt(max(fr ** 2 - fb ** 2, 0)))
+print(f"\nnear field: bias {nb:+.4f}  RMSE {nr:.4f}  residual SD {nsd:.4f}")
+print(f"far  field: bias {fb:+.4f}  RMSE {fr:.4f}  residual SD {fsd:.4f}")
+print("\nP3a is scored on residual SD, NOT RMSE. RMSE^2 = bias^2 + variance, so "
+      "an\nRMSE comparison counts mean reversion as scatter and reports 'held' "
+      "when the\nnear field is in fact the LESS scattered end.")
 
 fig, axes = plt.subplots(1, 2, figsize=(12.4, 4.4))
 a = axes[0]
-a.scatter(y[te], p_m1 - y[te], s=3, alpha=.25, lw=0)
-ctr = [(r['bin_lo'] + r['bin_hi']) / 2 for r in rb]
-a.plot(ctr, [r['bias'] for r in rb], 'o-', color='tab:red', label='bin bias')
+a.scatter(y[te][~fl], p_m1[~fl] - y[te][~fl], s=3, alpha=.25, lw=0, label='measured')
+a.scatter(y[te][fl], p_m1[fl] - y[te][fl], s=3, alpha=.25, lw=0, color='tab:orange',
+          label='at floor')
+a.plot(ctr, bias_b, 'o-', color='tab:red', label='bin bias (measured)')
 a.axhline(0, color='k', lw=1)
 a.set_xlabel('true log10 d [km]'); a.set_ylabel('residual  (pred - true)')
 a.set_title('Residual vs target'); a.grid(alpha=.3); a.legend(fontsize=8)
 
 b = axes[1]
-b.plot(ctr, [r['rmse'] for r in rb], 'o-')
-b.set_xlabel('true log10 d [km]'); b.set_ylabel('RMSE in bin')
-b.set_title('Heteroscedasticity'); b.grid(alpha=.3)
+b.plot(ctr, rmse_b, 'o-', label='RMSE')
+b.plot(ctr, sd_b, 's-', label='residual SD')
+b.plot(ctr, np.abs(bias_b), '^--', label='|bias|')
+b.set_xlabel('true log10 d [km]'); b.set_ylabel('log10 km')
+b.set_title('Error decomposition'); b.grid(alpha=.3); b.legend(fontsize=8)
 plt.tight_layout(); plt.show()
-
-near = [r for r in rb if r['n'] > 0][:3]
-far = [r for r in rb if r['n'] > 0][-3:]
-nb = float(np.mean([r['bias'] for r in near]))
-fb = float(np.mean([r['bias'] for r in far]))
-nr = float(np.mean([r['rmse'] for r in near]))
-fr = float(np.mean([r['rmse'] for r in far]))
-print(f"\nnear field (3 smallest-d bins): bias {nb:+.4f}  RMSE {nr:.4f}")
-print(f"far  field (3 largest-d  bins): bias {fb:+.4f}  RMSE {fr:.4f}")
-print("\nCAUTION: any regressor regresses toward the mean, which alone produces "
-      "positive\nbias at low y and negative at high y. P3 is only supported if "
-      "the near-field\nRMSE is also elevated -- a bias symmetric about the mean "
-      "is the null result.")
 """.rstrip()))
 
 cells.append(md(r"""
@@ -721,20 +833,30 @@ verdict = {
     'P2 1-NN gap random > grouped by >0.1':
         (r2_r - r2_g > 0.1, f"random {r2_r:+.4f} vs grouped {r2_g:+.4f}, "
                             f"gap {r2_r - r2_g:+.4f}"),
-    'P3a near-field RMSE exceeds far-field':
-        (nr > fr, f"near {nr:.4f} vs far {fr:.4f}"),
-    'P3b near-field bias is positive':
-        (nb > 0, f"near-field bias {nb:+.4f}"),
+    'P3a near-field residual SD exceeds far-field':
+        (nsd > fsd, f"near SD {nsd:.4f} vs far SD {fsd:.4f} "
+                    f"(RMSE {nr:.4f} vs {fr:.4f} -- bias-inflated)"),
+    'P3b near-field bias is positive (measured rows only)':
+        (nb > 0, f"near-field bias {nb:+.4f}, censored rows excluded"),
     'P3c overall R2 > 0.9 (contradicts Risk 19)':
         (r2_m1 > 0.9, f"M1 R2 = {r2_m1:+.4f}"),
 }
 for k, (ok, detail) in verdict.items():
     print(f"  [{'HELD' if ok else 'FALSIFIED':9s}] {k}\n              {detail}")
 
-print("\nA falsification here is a result, not a failure. P1 falsified means "
-      "the dataset\nneeds fixing before Week 12. P3c falsified means Risk 19 "
-      "was right and the\nCantor-set framing stands. Either way it goes in the "
-      "log and to Dr. Lang.")
+print("\nA falsification here is a result, not a failure.\n")
+print("READ P3c CAREFULLY. A falsified P3c means the >0.9 prediction was wrong.")
+print("It is NOT evidence for Risk 19's mechanism. Risk 19 attributes mediocre")
+print("R2 to Cantor-set non-smoothness, but the labeller measures distance to a")
+print("DENSIFIED INTERPOLATED CONTINUUM at ~12.3 km spacing and cannot resolve")
+print("the gaps -- that structure is absent from the target as generated. So")
+print("Risk 19 stays untested; this experiment has no power over it.\n")
+print("P3a and P3b holding is the substantive half: the predicted MECHANISM")
+print("(bounded network gradients cannot track grad(log d) ~ 1/d) is visible in")
+print("the near-field bias, even though the magnitude prediction failed.\n")
+print("If B2 scores near or below zero under BOTH splits, P2 is falsified but")
+print("UNINFORMATIVE -- a baseline at zero cannot resolve a gap. The evidence")
+print("about row dependence then comes from the group census, not from B2.")
 """.rstrip()))
 
 cells.append(code(r"""
@@ -772,6 +894,41 @@ np.savez_compressed('../data/wk11/predictions_wk11.npz',
 print(f"\nsaved -> ../data/wk11/  [{time.time()-t0:.0f}s total]")
 """.rstrip()))
 
+cells.append(code(r"""
+import sys
+import numpy as np
+sys.path.insert(0, '../src')
+from metrics import residual_bins
+
+z = np.load('../data/wk11/predictions_wk11.npz')
+y, p, fl = z['y_test'], z['pred_mean'], z['at_floor_test']
+
+print("fraction of test rows whose predicted distance is within a factor of N")
+print(f"{'factor':>7s} {'log10 tol':>10s} {'all':>8s} {'measured':>9s}")
+for factor in (1.3, 2, 3, 5, 10, 30, 100):
+    t = np.log10(factor)
+    print(f"{factor:7.1f} {t:10.3f} {np.mean(np.abs(p - y) <= t):8.3f} "
+          f"{np.mean(np.abs(p[~fl] - y[~fl]) <= t):9.3f}")
+
+print("\ndead-zone boundary vs bin resolution (measured rows only)")
+for nb in (12, 18, 24, 36):
+    rb = residual_bins(y[~fl], p[~fl], n_bins=nb)
+    ctr = np.array([(r['bin_lo'] + r['bin_hi']) / 2 for r in rb])
+    bias = np.array([r['bias'] for r in rb])
+    imp = bias + ctr
+    k = 1
+    while k < len(imp) and np.ptp(imp[:k + 1]) < 0.10:
+        k += 1
+    if k >= 3:
+        print(f"  n_bins={nb:3d}  flat over {k:2d} bins  "
+              f"constant {10**imp[:k].mean()*1e3:6.1f} m  "
+              f"boundary {10**rb[k-1]['bin_hi']*1e3:7.0f} m  "
+              f"slope {np.polyfit(ctr[:k], bias[:k], 1)[0]:+.3f}  "
+              f"width {rb[0]['bin_hi']-rb[0]['bin_lo']:.3f} dec")
+    else:
+        print(f"  n_bins={nb:3d}  no flat prefix")
+"""))
+
 cells.append(md(r"""
 ## Carried into Week 12
 
@@ -798,9 +955,6 @@ nb = dict(cells=cells,
 
 # relative to THIS FILE, not the working directory -- otherwise the script only
 # works when run from the repo root and fails from inside notebooks/
-import os
 out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         'nb11_first_regressor.ipynb')
-with open(out_path, 'w') as f:
-    json.dump(nb, f, indent=1)
-print(f"wrote {out_path}: {len(cells)} cells")
+write_notebook(nb, out_path)
