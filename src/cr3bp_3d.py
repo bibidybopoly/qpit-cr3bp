@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 
-MU_EARTH_MOON = 0.01215058560962404
+from constants import MU_EARTH_MOON          # re-exported: see constants.py
 
 
 def cr3bp_rhs_3d(t, state, mu):

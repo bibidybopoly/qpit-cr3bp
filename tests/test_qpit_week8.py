@@ -16,6 +16,8 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 '..', 'src'))
 
+import constants as C                            # noqa: E402
+
 from cr3bp_3d import MU_EARTH_MOON as MU, halo_stability   # noqa: E402
 import qpit                                                # noqa: E402
 
@@ -38,9 +40,7 @@ import qpit                                                # noqa: E402
 #: If these ever need refreshing, the identifying pair is (C, rho/2pi), not
 #: the index.  Read-only: `qpit.seed_from_halo` and `halo_stability` both
 #: only read from it, so one shared dict is safe.
-HALO = dict(state0=[1.043805201996, 0.0, -0.075586294085,
-                    0.0, 0.392206924669, 0.0],
-            period=3.131511429611)
+HALO = dict(state0=list(C.HALO29_STATE), period=C.HALO29_PERIOD)
 
 
 # ---------------------------------------------------------------------------

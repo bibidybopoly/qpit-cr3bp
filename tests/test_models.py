@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import models as M
 from models import MLP, MLPConfig, train_mlp, predict, _param_groups
 
-FLOOR_KM = 1.55e-4
+from constants import FLOOR_KM
 Z_L = math.log10(FLOOR_KM)          # raw target units, log10 km
 
 
@@ -188,16 +188,51 @@ def test_log_sigma_is_trained_and_recorded():
 # HISTORY AND PREDICTIONS
 # =========================================================================
 
-def test_validation_loss_uses_the_training_loss():
-    """Stopping a Tobit fit on MSE selects the wrong epoch.  MSE on
-    standardised targets is bounded near 1 for an untrained net; the Tobit NLL
-    with a 50% censored block is not on that scale, so a val loss sitting in
-    the MSE range would mean the wrong function ran."""
-    X, y, c = toy(censored_frac=0.5)
-    _, hm = train_mlp(X, y, X, y, cfg=tiny(), loss='mse')
-    _, ht = train_mlp(X, y, X, y, cfg=tiny(), loss='tobit', z_L=Z_L,
-                      c_tr=c, c_val=c)
-    assert not np.isclose(ht['best_val_loss'], hm['best_val_loss'], rtol=0.05)
+def test_best_val_loss_is_the_tobit_nll_and_not_mse():
+    """Stopping a Tobit fit on MSE selects the wrong epoch.
+
+    FOUND BY MUTATION.  The first version of this only asserted that a Tobit
+    run and an MSE run report DIFFERENT val losses -- which stays true when the
+    validation loss is swapped to MSE, because a Tobit-trained model scored
+    with MSE still differs from an MSE-trained one.  It survived the mutation.
+    `train_mlp` returns the best-epoch state, so `best_val_loss` must equal the
+    training loss recomputed on that exact model.  Checking which of the two it
+    equals is the assertion that has teeth.
+    """
+    import torch
+    from losses import CensoredGaussianNLL
+    X, y, c = toy(censored_frac=0.4)
+    m, h = train_mlp(X, y, X, y, cfg=tiny(), loss='tobit', z_L=Z_L,
+                     c_tr=c, c_val=c)
+    yz = torch.as_tensor((y - h['y_mean']) / h['y_std'], dtype=torch.float32)
+    with torch.no_grad():
+        mu = m(torch.as_tensor(X, dtype=torch.float32))
+        tob = float(CensoredGaussianNLL(z_L=h['z_L_std'])(
+            mu, yz, m.log_sigma, torch.as_tensor(c)))
+        mse = float(torch.nn.MSELoss()(mu, yz))
+    assert abs(h['best_val_loss'] - tob) < 1e-5
+    assert abs(h['best_val_loss'] - mse) > 1e-3
+
+
+def test_a_mean_predictor_fit_is_flagged():
+    """Wk12 M2b seed 2 collapsed, reported early_stopped=True, and was averaged
+    into a five-seed band as a fit.  Forced here with a lr of 0 so the model
+    never leaves initialisation."""
+    X, y, c = toy()
+    _, h = train_mlp(X, y, X, y, cfg=tiny(lr=0.0, max_epochs=2),
+                     loss='tobit', z_L=Z_L, c_tr=c, c_val=c)
+    assert h['is_mean_predictor'] is True
+    assert h['val_r2'] < 0.05
+
+
+def test_a_real_fit_is_not_flagged():
+    """The flag must not fire on an ordinary short fit, or it is useless."""
+    rng = np.random.default_rng(0)
+    X = rng.standard_normal((400, 3))
+    y = 2.0 * X[:, 0] - X[:, 1]            # trivially learnable
+    _, h = train_mlp(X, y, X, y, cfg=tiny(max_epochs=200, min_epochs=50))
+    assert h['val_r2'] > 0.5
+    assert h['is_mean_predictor'] is False
 
 
 def test_censored_fractions_are_recorded():

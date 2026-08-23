@@ -13,7 +13,9 @@ import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from losses import gaussian_nll, CensoredGaussianNLL, check_censoring_consistency
+from constants import FLOOR_KM
+from losses import (gaussian_nll, CensoredGaussianNLL,
+                    check_censoring_consistency)
 
 LOG_SQRT_2PI = 0.5 * math.log(2.0 * math.pi)
 
@@ -175,7 +177,7 @@ def test_guard_catches_raw_z_L_against_standardised_target():
     """The exact bug the module docstring names: z_L left in log10 km while the
     target was standardised."""
     _raises(ValueError, check_censoring_consistency,
-            torch.tensor([-1.72, -1.72, 0.3, 1.1]), math.log10(1.55e-4),
+            torch.tensor([-1.72, -1.72, 0.3, 1.1]), math.log10(FLOOR_KM),
             torch.tensor([True, True, False, False]))
 
 

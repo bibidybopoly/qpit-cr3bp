@@ -224,7 +224,14 @@ def run_cell(name, transform, loss, X_tr, X_val, X_test,
                                     cfg=cfg, seeds=tuple(seeds),
                                     verbose=verbose, **kw)
     ev = evaluate_cell(preds, d_test, transform, floor_km, delta_km)
-    ev.update(cell=name, transform=transform, loss=loss,
+    # A seed stopped by the epoch budget is a LOWER BOUND, not a fit.  nb11's
+    # first run had all three seeds end that way and reported the result as
+    # though they had converged.  Counting it here puts it in the scorecard
+    # instead of in a printed warning inside a 3000-line training log.
+    ev.update(budget_limited=int(sum(bool(h['hit_max_epochs']) for h in hists)),
+              mean_predictors=int(sum(bool(h.get('is_mean_predictor'))
+                                      for h in hists)),
+              cell=name, transform=transform, loss=loss,
               delta_km=None if delta_km is None else float(delta_km),
               floor_km=float(floor_km), seeds=list(seeds),
               censored_frac_train=float(c_tr.mean()),
@@ -308,5 +315,7 @@ def scorecard(results, baseline='M1'):
                       - base.get('factors', {}).get('10', {}).get('near',
                                                                   float('nan'))),
             below_floor=s['frac_below_floor'],
+            budget_ltd=results[name].get('budget_limited', 0),
+            dead_seeds=results[name].get('mean_predictors', 0),
         ))
     return rows

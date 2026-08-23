@@ -20,7 +20,7 @@ from ablation import (build_target, common_taus, common_edges, evaluate_cell,
                       scorecard, save_results, _aggregate, _guard_not_frozen,
                       CELLS, D_MAX_KM, NEAR_FIELD_KM)
 
-FLOOR_KM = 1.55e-4
+from constants import FLOOR_KM
 DELTA = 0.125
 
 
@@ -63,6 +63,18 @@ def test_censored_rows_land_exactly_on_the_threshold():
         assert c.any()
         assert np.allclose(z[c], z_L, rtol=0.0, atol=1e-15)
         assert np.all(z[~c] > z_L)
+
+
+def test_censoring_boundary_matches_the_strict_inequality():
+    """FOUND BY MUTATION.  The toy data put censored rows at 0.1x the floor, so
+    nothing sat ON it and `<` vs `<=` was indistinguishable.  `sampling` sets
+    at_floor with a strict `<`, so a row at exactly the floor is NOT censored
+    even though its target IS clamped -- measure-zero, deliberate, and it has
+    to stay that way or the flag and the clamp disagree."""
+    d = np.array([FLOOR_KM * 0.5, FLOOR_KM, FLOOR_KM * 2])
+    z, c = build_target(d, 'log10', FLOOR_KM)
+    assert c.tolist() == [True, False, False]
+    assert z[0] == z[1] == np.log10(FLOOR_KM)
 
 
 def test_at_floor_column_is_checked_not_trusted():

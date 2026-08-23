@@ -5,13 +5,14 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 
+import constants as C                            # noqa: E402
+
 from features import (jacobi_constant, assert_no_leakage, build_features,
                       Standardizer, MU_EARTH_MOON, FEATURE_ALLOWLIST)
 
 # L2 halo #29 -- the project's target orbit, C recorded as 3.060334.
-HALO29 = np.array([1.043805201996, 0.0, -0.075586294085,
-                   0.0, 0.392206924669, 0.0])
-HALO29_C = 3.060334
+HALO29 = np.array(C.HALO29_STATE)
+HALO29_C = C.HALO29_C
 
 
 def test_jacobi_matches_halo29():

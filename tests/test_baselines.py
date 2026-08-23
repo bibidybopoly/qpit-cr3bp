@@ -23,7 +23,7 @@ from features import MU_EARTH_MOON, jacobi_constant, Standardizer
 from splits import grouped_split, random_row_split
 from metrics import regression_metrics
 
-LU = 384400.0
+from constants import LU             # one definition, project-wide
 
 
 def test_collinear_points_match_published_earth_moon_values():

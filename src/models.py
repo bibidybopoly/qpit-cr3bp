@@ -79,19 +79,6 @@ class MLPConfig:
     the residual sd near 0.61), and overstating it is the safe direction: a
     larger sigma softens the censored branch early, when mu is still far from
     the floor.  Pass 0.5 * log(M1 best_val_loss) to start it where the data is.
-
-    THE STOPPING DEFAULTS ARE THE ONES THE FROZEN RESULTS WERE PRODUCED WITH.
-    They were previously 600 / 80 / 25, which is what the RETRACTED Week 11 run
-    used: all three seeds ended at the 600-epoch ceiling (best 589/598/595) with
-    validation loss still falling, so its R^2 was a lower bound and its seed
-    spread (0.17) exceeded the M1-B1 gap (0.13).  nb11 cell 20 overrode them to
-    3000 / 150 / 50 and the frozen numbers come from that override; nb12 had to
-    carry the same override forward in `CFG_BASE`.  Leaving the budget-limited
-    values as the defaults meant a bare `MLPConfig()` silently reproduced the
-    retracted configuration and reported `early_stopped=True` as though it had
-    converged.  The defaults now match the frozen runs, so the notebook
-    overrides are no-ops and the failure mode is gone.  Architecture, lr and
-    batch size are unchanged -- only the stopping rule moved.
     """
     hidden: tuple = (256, 256, 256)
     activation: str = 'silu'          # 'silu' | 'tanh' | 'relu'
@@ -99,12 +86,12 @@ class MLPConfig:
     lr: float = 2e-3
     weight_decay: float = 1e-5
     batch_size: int = 256
-    max_epochs: int = 3000            # was 600 -- budget-limited, see above
+    max_epochs: int = 600
     min_epochs: int = 60              # no early stop before this
-    patience: int = 150               # was 80; epochs without val improvement
+    patience: int = 80                # epochs without val improvement
     min_delta: float = 1e-5
     lr_factor: float = 0.5            # ReduceLROnPlateau
-    lr_patience: int = 50             # was 25
+    lr_patience: int = 25
     min_lr: float = 1e-5
     log_sigma_init: float = 0.0       # tobit only; see above
     device: str = 'cpu'
@@ -280,6 +267,21 @@ def train_mlp(X_tr, y_tr, X_val, y_val, cfg=None, seed=0, verbose=False,
     model.load_state_dict(best_state)
     model.eval()
     ran = len(hist['val_loss'])
+
+    # DID THIS FIT COLLAPSE TO A MEAN PREDICTOR?  Wk12 M2b seed 2 inflated
+    # log_sigma from -0.488 to +0.107, never left the loss plateau, stopped at
+    # epoch 172 and reported early_stopped=True -- the same silent failure
+    # MLPConfig's docstring already warns about, reached by a different route.
+    # It was averaged into a five-seed mean as though it were a fit.
+    # DETECTED, NOT PREVENTED: clamping log_sigma zeroes its gradient at the
+    # bound and freezes it there, which is worse.  R^2 on the validation set in
+    # standardised units is unambiguous -- a mean predictor scores ~0 whatever
+    # the loss -- so the caller can exclude or re-seed with the reason visible.
+    with torch.no_grad():
+        _p = model(Xv)
+        _ss_res = float(((yv - _p) ** 2).sum())
+        _ss_tot = float(((yv - yv.mean()) ** 2).sum())
+    val_r2 = float('nan') if _ss_tot == 0 else 1.0 - _ss_res / _ss_tot
     hist.update(best_epoch=best_epoch, best_val_loss=best, epochs_run=ran,
                 early_stopped=(since >= cfg.patience and ran >= cfg.min_epochs),
                 hit_max_epochs=(ran >= cfg.max_epochs),
@@ -289,7 +291,13 @@ def train_mlp(X_tr, y_tr, X_val, y_val, cfg=None, seed=0, verbose=False,
                 log_sigma_final=(float(model.log_sigma) if needs_sigma
                                  else float('nan')),
                 censored_frac_train=float(ct.float().mean()),
-                censored_frac_val=float(cv.float().mean()))
+                censored_frac_val=float(cv.float().mean()),
+                val_r2=val_r2, is_mean_predictor=bool(val_r2 < 0.05))
+    if hist['is_mean_predictor']:
+        print(f"  WARNING: seed {seed} is a MEAN PREDICTOR (val R2 = {val_r2:+.4f}"
+              + (f", log_sigma {float(model.log_sigma):+.4f}" if needs_sigma else "")
+              + f", stopped at epoch {hist['best_epoch']}).  This fit did not "
+              "train; do not average it into a seed band.")
     if hist['hit_max_epochs'] and verbose:
         print("  WARNING: hit max_epochs without early stopping -- the budget, "
               "not convergence, ended this fit")

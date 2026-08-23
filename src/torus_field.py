@@ -36,7 +36,7 @@ import numpy as np
 
 from qpit import evaluate_curve
 
-LU = 384400.0
+from constants import LU                     # re-exported: see constants.py
 
 
 def _gap_distance(X, U_a, U_b, thetas):

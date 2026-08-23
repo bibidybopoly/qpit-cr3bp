@@ -187,7 +187,13 @@ def test_newton_step_reduces_residual():
     orbit = _reference_orbit()
     U0, T0, rho0 = qpit.seed_from_halo(orbit, MU, N, EPS)
     before = np.linalg.norm(qpit.invariance_residual(U0, T0, rho0, MU))
-    U1, T1, r1, reported = qpit.newton_step(U0, T0, rho0, MU)
+    # newton_step's 4th return became an INFO DICT in Week 8; it was a bare
+    # float |F| in Week 7, and this call site was never updated, so the
+    # comparison below raised TypeError instead of testing anything.  `before`
+    # is a 2-norm, so the matching key is res_2 -- res_inf is what
+    # converge_torus declares convergence on and is a different number.
+    U1, T1, r1, info = qpit.newton_step(U0, T0, rho0, MU)
+    reported = info['res_2']
     after = np.linalg.norm(qpit.invariance_residual(U1, T1, r1, MU))
 
     # NOT bit-identical, and the reason matters.  newton_step gets its F from

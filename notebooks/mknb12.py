@@ -1,5 +1,4 @@
 import json
-import os
 
 def _lines(s):
     ls = s.strip("\n").split("\n")
@@ -11,71 +10,6 @@ def md(s):
 def code(s):
     return dict(cell_type="code", metadata={}, execution_count=None,
                 outputs=[], source=_lines(s))
-
-
-def write_notebook(nb, out_path):
-    """Write `nb` to `out_path`, but NEVER silently clobber a diverged notebook.
-
-    This builder used to write unconditionally.  On 2026-08-16 that discarded a
-    notebook carrying five cells of hand-applied corrections -- including the
-    epoch-budget fix the retraction turned on -- together with every executed
-    output, because the builder had drifted behind the notebook and nobody
-    diffed before running it.
-
-    Rules:
-      * nothing on disk        -> write.
-      * cell sources identical -> DO NOT write.  A rewrite would be a no-op on
-                                  the source and would strip executed outputs,
-                                  which is a silent loss of work.
-      * cell sources differ    -> refuse, print the divergence, exit 1.  Pass
-                                  --force to overwrite anyway.
-    """
-    import difflib
-    import sys
-
-    def sources(cs):
-        return [''.join(c['source']) if isinstance(c['source'], list)
-                else c['source'] for c in cs]
-
-    name = os.path.basename(out_path)
-    force = '--force' in sys.argv
-
-    if os.path.exists(out_path) and not force:
-        with open(out_path, encoding='utf-8') as fh:
-            disk = json.load(fh)
-        old, new = sources(disk['cells']), sources(nb['cells'])
-        n_out = sum(len(c.get('outputs', [])) for c in disk['cells']
-                    if c['cell_type'] == 'code')
-
-        if old == new:
-            print(f"{name}: already up to date ({len(new)} cells, "
-                  f"{n_out} executed outputs preserved) -- not rewriting")
-            return
-
-        print(f"REFUSING TO OVERWRITE {name}")
-        print(f"  on disk : {len(old)} cells, {n_out} executed outputs")
-        print(f"  builder : {len(new)} cells")
-        print("  The notebook on disk has content this builder would destroy.\n")
-        for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(
-                None, old, new).get_opcodes():
-            if tag == 'equal':
-                continue
-            print(f"  {tag.upper()}  disk[{i1}:{i2}] -> builder[{j1}:{j2}]")
-            for k in range(i1, i2):
-                print(f"      - disk    cell {k}: "
-                      f"{old[k].strip().splitlines()[0][:84]}")
-            for k in range(j1, j2):
-                print(f"      + builder cell {k}: "
-                      f"{new[k].strip().splitlines()[0][:84]}")
-        print(f"\n  Port the notebook's version into this builder, or re-run "
-              f"with --force\n  to discard it.  It is in git:  "
-              f"git checkout -- notebooks/{name}")
-        raise SystemExit(1)
-
-    with open(out_path, 'w', encoding='utf-8') as f:
-        json.dump(nb, f, indent=1)
-    print(f"wrote {out_path}: {len(nb['cells'])} cells")
-
 
 cells = []
 
@@ -158,6 +92,7 @@ from metrics import (regression_metrics, accuracy_vs_threshold,
 from models import MLPConfig
 import targets as T
 import ablation as AB
+from constants import FLOOR_KM          # single source -- do NOT shadow (audit s3)
 
 torch.set_num_threads(max(1, (os.cpu_count() or 2) // 2))
 np.set_printoptions(precision=6, suppress=True)
@@ -167,20 +102,20 @@ DATA      = '../data/qpit_dataset_w10.npz'
 WK11      = '../data/wk11/results_wk11.json'      # frozen; read only
 OUT_DIR   = '../data/wk12'
 
-# THE WEEK 11 CONFIG, NOT THE DEFAULTS.  nb11's first run ended all three
-# seeds at the 600-epoch ceiling with validation loss still falling, so its R2
-# was a lower bound and its seed spread (0.17) exceeded the M1-B1 gap.  The
-# MLPConfig defaults are still those budget-limited values; nb11 cell 20
-# overrode them and the frozen results come from the override.  Using the
-# defaults here would budget-limit every cell of the 2x2 and M1 would not
-# reproduce.  Architecture, lr and batch size are unchanged -- only stopping.
+# THE WEEK 11 CONFIG.  nb11's first run ended all three seeds at the 600-epoch
+# ceiling with validation loss still falling, so its R2 was a lower bound and
+# its seed spread (0.17) exceeded the M1-B1 gap; nb11 cell 20 overrode the
+# stopping rule and the frozen results come from that override.  The audit has
+# since moved those values into the MLPConfig DEFAULTS, so this block is now a
+# NO-OP -- kept because it states, at the call site, which settings the frozen
+# baseline was produced with.  If it ever stops being a no-op, the defaults
+# moved again and that is worth knowing before the 2x2 runs.
 CFG_BASE = dict(hidden=(256, 256, 256), activation='silu',
                 max_epochs=3000, patience=150, lr_patience=50)
 
 SEED_SPLIT  = 0                    # MUST match Week 11 or the control is void
 FRAC_TEST, FRAC_VAL = 0.20, 0.10
 SEEDS_MODEL = (0, 1, 2, 3, 4)      # five, not three -- see below
-FLOOR_KM    = 1.55e-4
 
 # DELTAS is not set here.  Both anchors are MEASURED, in section 2c, from
 # the frozen Week 11 predictions -- a hardcoded value sitting beside an
@@ -325,9 +260,16 @@ if {'d_drawn_km', 'source', 'random_dir'} <= set(D):
                          med_ratio=float(np.median(r)),
                          iqr=float(np.subtract(*np.percentile(r, [75, 25])))))
     print(format_table(rows))
-    print("\nThe drawn range starts AT the floor, so the bottom bins are where "
-          "the ~2% contract should break.  Where the IQR leaves ~0.04 is the "
-          "empirical trust floor.")
+    print("\nWk12 RESULT: it does not break.  med_ratio 0.9999 and IQR ~0.001 "
+          "in every bin, 0.2 m to 100 km.  That measures PRECISION -- recovery "
+          "of the offset against the SAME interpolated surface -- while the "
+          "floor is an ACCURACY limit (two derivations of one torus land 2-155 "
+          "mm apart).  So 2b cannot check FLOOR_KM independently, contrary to "
+          "what it was set up to do; delta's anchor rests on 2c alone.")
+    print("It does show something else: realised/drawn = 0.9999 puts the "
+          "residual tangential component of `sampling.normal_directions` at "
+          "~1.4% of the step (~0.8 deg), reproducing the audit's finding "
+          "independently on 11,773 rows.")
 else:
     print("d_drawn_km / source / random_dir absent -- 2b not runnable on this file")
 """.rstrip()))
@@ -457,9 +399,34 @@ ev_m1, pred_m1 = AB.run_cell('M1', 'log10', 'mse', X_tr, X_va, X_te,
                              seeds=SEEDS_MODEL, at_floor_tr=af_tr,
                              at_floor_val=af_va, verbose=True)
 
+# SEARCH the frozen file rather than assume a key path.  A .get() chain that
+# misses returns None and prints as nan, so the reproduction check silently
+# passes on no data -- which is the failure mode this whole suite exists to
+# catch, and the first version of this cell had it.
 with open(WK11) as fh:
     wk11 = json.load(fh)
-r2_w11 = wk11.get('results', {}).get('M1', {}).get('r2', float('nan'))
+
+def _find_r2(node, path=()):
+    hits = []
+    if isinstance(node, dict):
+        for k, v in node.items():
+            if isinstance(v, (int, float)) and 'r2' in str(k).lower():
+                hits.append(('.'.join(path + (str(k),)), float(v)))
+            else:
+                hits += _find_r2(v, path + (str(k),))
+    elif isinstance(node, list):
+        for i, v in enumerate(node):
+            hits += _find_r2(v, path + (str(i),))
+    return hits
+
+_all = _find_r2(wk11)
+_m1 = [(k, v) for k, v in _all if 'm1' in k.lower()]
+if not _m1:
+    raise KeyError(f"no M1 R2 in {WK11}. R2-like keys present: "
+                   f"{[k for k, _ in _all]}")
+r2_w11 = _m1[0][1]
+if len(_m1) > 1:
+    print(f"several M1 R2 entries, using {_m1[0][0]}: {_m1}")
 r2_now = ev_m1['summary']['r2_measured']
 print(f"\nWeek 11 M1 R2: {r2_w11:.4f}   reproduced (measured rows): {r2_now:.4f} "
       f"+/- {ev_m1['summary']['r2_measured_sd']:.4f}")
@@ -467,6 +434,14 @@ print("NOTE: Week 11's headline R2 was over ALL test rows; this is over MEASURED
       "rows only, because a clamped label is not a point observation and scoring "
       "against it rewards predicting the clamp.  The two are not the same number "
       "and the difference is not a discrepancy.")
+
+nbl = ev_m1['budget_limited']
+if nbl:
+    print(f"\n{nbl}/{len(SEEDS_MODEL)} M1 seeds ended on the EPOCH BUDGET, not "
+          "on convergence -- those are lower bounds.  nb11's first run had all "
+          "three end that way at 600 epochs and read as converged.  Check how "
+          "far each was still moving before treating the band as a fit; if the "
+          "Tobit cells do this on most seeds, stop rather than report it.")
 
 best_val = float(np.mean([h['best_val_loss'] for h in ev_m1['histories']]))
 cfg_tobit = MLPConfig(**CFG_BASE, log_sigma_init=0.5 * np.log(best_val))
@@ -561,6 +536,29 @@ best = 'boundary'
 r, s = RESULTS[best], {k: v['summary'] for k, v in RESULTS[best].items()}
 sd = s['M1']['r2_measured_sd']
 
+# P12e IS SCORED AT THE MEASURED OPERATING POINT, NOT AN ASSUMED ONE.  The
+# Mills limit lambda(t) -> -t is in units of the FITTED sigma.  6.54 m over a
+# 0.155 m floor is 42x in DISTANCE and only 1.625 decades; at a residual sigma
+# near 1 decade that is t ~ -1.5, not t ~ -40.  lambda(t) > |t| for every
+# t < 0, so a small |t| means Tobit pushes censored rows down HARDER than MSE
+# rather than matching it -- the opposite of the asymptotic reading.
+from scipy.stats import norm as _norm
+cens_te = d_te < FLOOR_KM
+print("\noperating point on censored test rows:")
+for cell in ('M2b', 'M2c'):
+    h, tf = r[cell]['histories'][0], r[cell]['transform']
+    dl = r[cell]['delta_km']
+    mu_km = float(np.mean([T.to_log10_km(pp, tf, FLOOR_KM, dl)[cens_te].mean()
+                           for pp in PREDS[best][cell]]))
+    mu_t = float(T.forward(np.array([10.0 ** mu_km]), tf, FLOOR_KM, dl)[0])
+    z_Lr = T.threshold_in_target_units(FLOOR_KM, tf, dl)
+    sig = float(np.exp(h['log_sigma_final']) * h['y_std'])
+    t = (z_Lr - mu_t) / sig
+    lam = float(_norm.pdf(t) / max(_norm.cdf(t), 1e-300))
+    print(f"  {cell}: mu-z_L = {mu_t-z_Lr:+.3f} target units, sigma = {sig:.3f}, "
+          f"t = {t:+.2f}, lambda/|t| = {lam/abs(t):.3f}  "
+          f"({'near the MSE limit' if lam/abs(t) < 1.05 else 'NOT in the asymptote'})")
+
 verdict = {}
 verdict['P12b'] = (cens.mean() > 0.02,
                    f"censored fraction {cens.mean():.4f}")
@@ -602,6 +600,13 @@ Registered before the numbers, so it is not read off them.
 - **If M2a carries the gain and M2b does not**, the problem was representational
   → the regeneration's value shifts toward the 10–15 energies rather than the
   near field.
+
+If it fires toward regeneration, the batch is already specified by the audit
+handoff and goes as ONE change, not three: swap in
+`data/families/L2_E2_dense.npz` (562 → 0 rows below their own error bound), fix
+`sampling.normal_directions` (sequential Gram–Schmidt clears only the second
+tangent), and **write `mknb10.py` first**, since nb10 currently has no builder
+at all. One at a time invalidates Weeks 11–12 three times over.
 
 One thing that has to be in the spec whichever branch fires: **near-field
 oversampling alone cannot help.** More states close to a surface produce more
@@ -660,9 +665,36 @@ cells.append(md(r"""
 nb = dict(cells=cells,
           metadata=dict(kernelspec=dict(display_name="Python 3",
                                         language="python", name="python3"),
-                        language_info=dict(name="python", version="3.11")),
+                        language_info=dict(name="python", version="3.12")),
           nbformat=4, nbformat_minor=5)
 
+import os, sys
 out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                         'nb12_loss_target.ipynb')
-write_notebook(nb, out_path)
+
+# THE BUILDER AND THE NOTEBOOK ARE TWO COPIES OF ONE THING (Risk 21, Realized
+# Wk12).  Running mknb11.py mid-audit clobbered 33 cells and 23 executed
+# outputs down to a stale builder's 32 with none.  Identical sources -> do not
+# write at all, so executed outputs survive; different -> report and stop.
+# Any hand-edit to the notebook goes back into THIS FILE, not the .ipynb.
+if os.path.exists(out_path) and '--force' not in sys.argv:
+    a = ["".join(c['source']) for c in json.load(open(out_path))['cells']]
+    b = ["".join(c['source']) for c in cells]
+    if a == b:
+        print(f"unchanged: {out_path} ({len(cells)} cells, outputs preserved)")
+        raise SystemExit(0)
+    print(f"DIVERGED: notebook has {len(a)} cells, builder produces {len(b)}")
+    for i in range(max(len(a), len(b))):
+        x = a[i] if i < len(a) else None
+        y = b[i] if i < len(b) else None
+        if x != y:
+            what = ('only in notebook' if y is None
+                    else 'only in builder' if x is None else 'differs')
+            print(f"  cell {i}: {what}  | {(x or y).splitlines()[0][:62]}")
+    print("\nRefusing to overwrite.  Fold the notebook's edits into mknb12.py, "
+          "or re-run with --force to discard them.")
+    raise SystemExit(1)
+
+with open(out_path, 'w') as f:
+    json.dump(nb, f, indent=1)
+print(f"wrote {out_path}: {len(cells)} cells")

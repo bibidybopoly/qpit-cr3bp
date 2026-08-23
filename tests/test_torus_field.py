@@ -8,11 +8,25 @@ INDEPENDENT probe measurement in the band where both are valid.
 
 Needs ../data/famC_dense.npz (densify.densify at target_gap_km=12.3).
 
+THAT FILE IS NOT IN THE REPO -- data/ is gitignored -- so on a fresh clone this
+file used to raise FileNotFoundError from all ten tests.  Nine red tests that
+mean "the fixture is missing" are worse than no tests: they hide whether the
+certification actually passes.  It now SKIPS instead, via stdlib
+`unittest.SkipTest`, which pytest reports as a skip and the standalone runner
+below prints as one.  No pytest import is added.
+
+Do NOT point FAM at a different family to make it run.  PROBE_CAL (1.1433) and
+the tolerances below were measured on famC specifically; substituting
+data/families/L2_E0.npz, for instance, passes 9 of 10 and fails the probe-band
+agreement at 0.9885 against a 0.99 bar -- a calibration mismatch reported as a
+label error.
+
 Run: pytest tests/test_torus_field.py -v   (or python tests/test_torus_field.py)
 """
 
 import os
 import sys
+import unittest
 
 import numpy as np
 
@@ -24,12 +38,18 @@ from qpit import evaluate_curve                                  # noqa: E402
 from torus_field import _gap_distance, label_states, surface_distance  # noqa: E402
 from torus_probe import curve_local_distance, probe_curve        # noqa: E402
 
-LU = 384400.0
+from constants import LU             # one definition, project-wide
 FAM = os.path.join(os.path.dirname(__file__), '..', 'data', 'famC_dense.npz')
 PROBE_CAL = 1.1433          # measured on unstable-bundle displacements
 
 
 def _fam():
+    if not os.path.exists(FAM):
+        raise unittest.SkipTest(
+            f"needs {os.path.normpath(FAM)}, which is not in the repo (data/ is "
+            f"gitignored). Regenerate with densify.densify(members, mu, "
+            f"target_gap_km=12.3) then densify.save_family(). Do not substitute "
+            f"another family: PROBE_CAL and the tolerances here are famC's.")
     return load_family(FAM)
 
 
@@ -221,7 +241,15 @@ def test_label_floor_is_the_interpolation_bound():
 
 if __name__ == '__main__':
     fns = [v for k, v in sorted(globals().items()) if k.startswith('test_')]
+    ok = skipped = 0
     for fn in fns:
-        fn()
+        try:
+            fn()
+        except unittest.SkipTest as e:
+            skipped += 1
+            print(f"SKIP  {fn.__name__}: {e}")
+            continue
+        ok += 1
         print(f"PASS  {fn.__name__}")
-    print(f"\n{len(fns)}/{len(fns)} passed")
+    print(f"\n{ok}/{len(fns)} passed"
+          + (f", {skipped} skipped" if skipped else ""))

@@ -257,6 +257,19 @@ def test_dead_zone_self_consistency_catches_a_truncated_run():
         assert dz['self_consistent'], n_bins
 
 
+def test_dead_zone_self_check_goes_false_on_an_incoherent_fit():
+    """FOUND BY MUTATION.  Every earlier case asserted `self_consistent` was
+    True, so hardwiring it to True survived.  A model emitting 100 m over a
+    range that tops out at 4 m is exactly the incoherence the flag is for --
+    the reported constant sits outside the range it was constant over."""
+    y = np.linspace(-3.81, 2.0, 6000)
+    p = np.where(y < -2.0, -1.0, y)
+    dz = dead_zone(y, p, n_bins=12)
+    assert dz['flat'] and dz['k'] >= 3
+    assert dz['constant_m'] > dz['boundary_m']
+    assert dz['self_consistent'] is False
+
+
 def test_dead_zone_reports_no_flat_prefix_when_the_model_tracks():
     y = np.linspace(-4, 2, 3000)
     dz = dead_zone(y, y + 0.02, n_bins=12)

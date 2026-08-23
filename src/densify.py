@@ -43,7 +43,7 @@ import numpy as np
 from qpit import curve_amplitude
 from torus_probe import probe_gap
 
-LU = 384400.0
+from constants import LU                     # re-exported: see constants.py
 
 # Measured in nb10_gap_experiment: midpoint displacement vs gap, exponent
 # 2.003, 2.6e-3 km at a 62.5 km gap.  Re-measure if the family changes.

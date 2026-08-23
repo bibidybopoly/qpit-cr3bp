@@ -20,3 +20,10 @@ def test_stm_3d_matches_finite_differences():
         dx_actual = sol_pert.y[:, -1] - ref_final
         dx_predicted = Phi @ dx0
         assert np.max(np.abs(dx_actual - dx_predicted)) < 1e-6, f"3D STM failed component {j}"
+
+if __name__ == '__main__':
+    fns = [(k, v) for k, v in sorted(globals().items()) if k.startswith('test_')]
+    ok = 0
+    for name, fn in fns:
+        fn(); ok += 1; print(f"  ok  {name}")
+    print(f"{ok}/{len(fns)} passed")

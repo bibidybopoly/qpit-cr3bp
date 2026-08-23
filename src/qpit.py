@@ -969,7 +969,7 @@ def unpack_X(X):
 # ---------------------------------------------------------------- resolution
 
 def fourier_tail(U):
-    """||C_k|| at the highest retained |k|, relative to the k=0 coefficient.
+    """||C_k|| at the highest retained |k|, relative to the FUNDAMENTAL (k=+/-1).
 
     The cheap per-step resolution monitor.  offgrid_residual is the honest
     check but costs N propagations; this costs one DFT, so it runs every

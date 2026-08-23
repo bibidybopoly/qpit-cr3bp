@@ -46,8 +46,7 @@ import numpy as np
 from qpit import evaluate_curve, torus_bundle
 from torus_field import surface_distance
 
-LU = 384400.0
-FLOOR_KM = 1.55e-4          # 0.155 m, measured reproducibility floor
+from constants import LU, FLOOR_KM           # re-exported: see constants.py
 
 
 # =========================================================================

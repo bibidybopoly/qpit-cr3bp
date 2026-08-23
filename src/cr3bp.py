@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import brentq
 
 
-MU_EARTH_MOON = 0.01215058560962404
+from constants import MU_EARTH_MOON          # re-exported: see constants.py
 
 
 def cr3bp_rhs(t, state, mu):

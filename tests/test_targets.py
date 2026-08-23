@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from targets import (log10_forward, log10_inverse, asinh_forward, asinh_inverse,
                      forward, inverse, to_log10_km, threshold_in_target_units)
 
-FLOOR_KM = 1.55e-4          # must equal sampling.FLOOR_KM
+from constants import FLOOR_KM         # single source (audit s3)
 DELTAS = (1.55e-4, 6.5e-3, 0.125, 1.0)
 
 

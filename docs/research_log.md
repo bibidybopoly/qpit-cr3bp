@@ -1,10 +1,6 @@
 # Research Log
 
-
-
 ## 2026-05-27
-
-
 
 **Worked on:** 
 
@@ -36,12 +32,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Begin reading Koon et al. Chapter 1
@@ -49,8 +39,6 @@
 
 
 ## 2026-05-28
-
-
 
 **Worked on:** 
 
@@ -87,8 +75,6 @@
 
 ## 2026-05-29
 
-
-
 **Worked on:** 
 
 - Multivarible calc
@@ -101,12 +87,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc and read Koon and Olihara
@@ -114,8 +94,6 @@
 
 
 ## 2026-05-31
-
-
 
 **Worked on:** 
 
@@ -129,12 +107,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc and read Koon and Olihara
@@ -142,8 +114,6 @@
 
 
 ## 2026-06-01
-
-
 
 **Worked on:** 
 
@@ -157,12 +127,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc and read Koon and Olikara
@@ -170,8 +134,6 @@
 
 
 ## 2026-06-03
-
-
 
 **Worked on:** 
 
@@ -185,12 +147,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc and read Koon and Olikara
@@ -198,8 +154,6 @@
 
 
 ## 2026-06-04
-
-
 
 **Worked on:** 
 
@@ -213,12 +167,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc, specifically Laplacian and Jacobian, and read Koon and Olihara
@@ -226,8 +174,6 @@
 
 
 ## 2026-06-05
-
-
 
 **Worked on:** 
 
@@ -241,12 +187,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc, specifically line integrals, and read Koon and Olikara
@@ -254,8 +194,6 @@
 
 
 ## 2026-06-06
-
-
 
 **Worked on:** 
 
@@ -269,12 +207,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Learn multivariable calc, specifically double integrals
@@ -282,8 +214,6 @@
 
 
 ## 2026-06-07
-
-
 
 **Worked on:** 
 
@@ -297,12 +227,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Going to a summer camp and will have very little time to study Multivar Calc, will not be able to add entries into this log
@@ -310,8 +234,6 @@
 
 
 ## 2026-06-14
-
-
 
 **Worked on:** 
 
@@ -325,12 +247,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Multivar calc, specifically flux and different theorems
@@ -338,8 +254,6 @@
 
 
 ## 2026-06-15
-
-
 
 **Worked on:** 
 
@@ -353,12 +267,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Final confirmation of comprehension of multivar calc and beginning ordinary diff eq
@@ -366,8 +274,6 @@
 
 
 ## 2026-06-16
-
-
 
 **Worked on:** 
 
@@ -381,12 +287,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Continuing ODE
@@ -394,8 +294,6 @@
 
 
 ## 2026-06-18
-
-
 
 **Worked on:** 
 
@@ -409,12 +307,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Continuing ODE
@@ -422,8 +314,6 @@
 
 
 ## 2026-06-19
-
-
 
 **Worked on:** 
 
@@ -454,18 +344,12 @@
 **Amended 8-14**
 
 - The 06-19 conservation failures were never closed out in this log
-- Re-running the same four tests at rtol = atol = [___] gives max |ΔC/C| of 
-- [___] (L4)
-- [___] (L1)
-- [___] (near-Earth tangential)
-- [___] (near-Moon)
-- The Week 2 gate required ~1e-10; [these pass / these fail and here is what I did]
-
-
-
-**Stuck on / questions:**
-
-- None yet — setup phase
+- Re-running the same four tests at rtol = atol = 1e-12 gives max |ΔC/C| of 
+- 1.55e-11 (L4)
+- 1.65e-10 (L1)
+- 3.95e-08 (near-Earth tangential)
+- 1.50e-11 (near-Moon)
+- The Week 2 gate required ~1e-10; near-Earth and L4 fail, while near-moon and L1 succeed
 
 
 
@@ -476,8 +360,6 @@
 
 
 ## 2026-06-20
-
-
 
 **Worked on:** 
 
@@ -491,12 +373,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Continuing ODE
@@ -504,8 +380,6 @@
 
 
 ## 2026-06-22
-
-
 
 **Worked on:** 
 
@@ -521,12 +395,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Building a Lorenz Reservoir Computer
@@ -534,8 +402,6 @@
 
 
 ## 2026-06-23
-
-
 
 **Worked on:** 
 
@@ -576,12 +442,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Finishing ODE
@@ -589,8 +449,6 @@
 
 
 ## 2026-06-24
-
-
 
 **Worked on:** 
 
@@ -605,21 +463,7 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
-**Next session:**
-
-- Finishing ODE and dynamical systems
-
-
-
 ## 2026-06-25
-
-
 
 **Worked on:** 
 
@@ -633,9 +477,9 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
 
-- None yet — setup phase
+**GATE: Phase 1 exit — MET.** CR3BP integrator + energy conservation; RC reproduces Lorenz; multivar+ODE fluency
 
 
 
@@ -646,8 +490,6 @@
 
 
 ## 2026-06-26
-
-
 
 **Worked on:** 
 
@@ -661,12 +503,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Continuing Reading
@@ -675,8 +511,6 @@
 
 
 ## 2026-06-27
-
-
 
 **Worked on:** 
 
@@ -690,12 +524,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Developing the single-shooting differential corrector
@@ -703,8 +531,6 @@
 
 
 ## 2026-06-28
-
-
 
 **Worked on:** 
 
@@ -720,12 +546,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Developing the single-shooting differential corrector
@@ -733,8 +553,6 @@
 
 
 ## 2026-06-29
-
-
 
 **Worked on:** 
 
@@ -757,11 +575,6 @@
 ![Graphed L1 and L2 lyapunov famililies in the planar Earth-moon cr3bp.](fig_lyapunov_families.png)
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
 
 **Next session:**
 
@@ -770,9 +583,7 @@
 
 
 ## 2026-06-29 (part 2)
-# Did a lot today so decided to split it up
-
-
+### Did a lot today so decided to split it up
 
 **Worked on:** 
 
@@ -798,7 +609,7 @@
 
 
 
-**Amended 8/17**
+**Amended 8-17**
 - Two corrections to this entry:
 - First, "tori are near stable orbits" is wrong
 - Tori require a center (elliptic) direction, not stability
@@ -809,12 +620,6 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - Halo Orbits
@@ -822,8 +627,6 @@
 
 
 ## 2026-06-30
-
-
 
 **Worked on:** 
 
@@ -851,16 +654,10 @@
 
 
 
-**Amended 8/17**
+**Amended 8-17**
 
 - "Hartman-Grobman" is incorrect, the Stable Manifold Theorem is instead
 - 3D CR3BP equations of motion, 6×6 Jacobian, and 42-dimensional STM all validated to 1e-10 against finite differences.
-
-
-
-**Stuck on / questions:**
-
-- None yet — setup phase
 
 
 
@@ -871,8 +668,6 @@
 
 
 ## 2026-07-01
-
-
 
 **Worked on:** 
 
@@ -889,9 +684,9 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
 
-- None yet — setup phase
+**GATE: Phase 2 exit — MET.** Reproduced L1+L2 Lyapunov + halo families; manifolds match published figures
 
 
 
@@ -902,8 +697,6 @@
 
 
 ## 2026-07-02
-
-
 
 **Worked on:** 
 
@@ -932,20 +725,24 @@
 
 
 
-**Stuck on / questions:**
-
-- None yet — setup phase
-
-
-
 **Next session:**
 
 - QPIT Computation
 
 
 
-## 2026-08-03
+## 2026-08-02
 
+**Amended 8-17**
+
+- National Youth Science Camp, retrospective; no daily entries were possible
+
+- Read Olikara's thesis, Baresi-Olikara-Scheeres 2018, and Baresi's thesis
+- Selected GMOS as the computational method
+
+
+
+## 2026-08-03
 
 **Worked on:** 
 
@@ -965,7 +762,7 @@
 
 - Decided on GMOS for this project for a couple reasons:
 - The literature shows that it offers the most accuracy compared to computational costs
-- GMOS gives stability information for the QPITs it generates
+- GMOS gives stability information for the QPITs it generates from the rotated monodromy matrix
 - GMOS builds off the current infrastucture I have built
 
 - Began drafting emails to Olikara, Baresi, and Howell asking for clarification on a few things regarding GMOS computation
@@ -973,7 +770,7 @@
 
 
 
-**Amended 8/17**
+**Amended 8-17**
 
 - Here I selected L2 halo #29 over L1 #16 as the first target under the reasoning L2 #29 sits farther from the low-order resonances (0.038 from 1/3, 0.045 from 1/4 in ρ/2π) and maintains a clean center pair across the full tracked family range, per McCarthy & Howell
 - Also, constant frequency-ratio continuation avoids the resonance-termination problems affecting constant-energy and constant-mapping-time families
@@ -997,7 +794,6 @@
 
 ## 2026-08-04
 
-
 **Worked on:** 
 
 - Emails and GMOS implementation
@@ -1012,9 +808,6 @@
 - Began to implement GMOS
 
 
-**Stuck on / questions:**
-
-
 
 **Next session:**
 
@@ -1023,7 +816,6 @@
 
 
 ## 2026-08-05
-
 
 **Worked on:** 
 
@@ -1043,7 +835,17 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
+
+- Rank deficiency of exactly 2, measured by SVD post-convergence: gap of 8×10⁸ between σ[−2] and σ[−3], both nulls at machine zero
+- The two symmetry tangents (latitudinal, longitudinal) lie in the nullspace to 12-digit precision
+
+- Why the pre-convergence measurement doesn't count: at the seed the gap was only ~10×, polluted at O(ε²) by seed error
+- The symmetries are exactly flat only at a solution, so a rank measured off-solution reports your distance from the solution rather than the rank
+
+- The correct closure: two phase constraints plus mean Jacobi fixed, with ρ and T both free 
+
+- Amplitude envelope: converges cleanly from ε = 1e-5 through 2e-3 (344 km); collapses at 3e-3
 
 
 
@@ -1054,7 +856,6 @@
 
 
 ## 2026-08-06
-
 
 **Worked on:** 
 
@@ -1078,7 +879,28 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
+
+- The κ three-way consistency check:
+- κ = c · dρ_halo/dC predicts −11.080 while constant-C continuation measures −11.081
+- Four significant figures from two independent routes
+
+- The Week 8 table had the wrong sign because `C_target` came from each seed, mixing energy and amplitude effects
+- The true fixed-energy coefficient is negative because ρ *decreases* with amplitude at fixed energy
+
+- The constant-ρ family drifts toward lower C, making the nearest resonance 2/7 ≈ 0.285714 (below ρ₀/2π = 0.2932), reachable near A ≈ 10,000 km
+
+- `cr3bp_3d.halo_corrector`'s y = 0 event fired at t = 0, producing T = 0 with a false "converged" status
+
+- `converge_torus` defaulted `C_target` to the seed's energy rather than the halo's without saying so, which had an ε-sweep comparing tori at different energies
+
+- `curve_amplitude` is resolution-dependent  
+- Max over nodes understates by ~0.096% at N = 31 (17.1644 km node-max vs 17.1815 km dense)
+- Prefer dense evaluation
+
+- Re-deriving a torus by a different route lands 2–155 mm from the surface
+- This comes from the small singular value σ₃ ≈ 2.0e-4 amplifying residuals, and it is structural — not fixable by tightening integration tolerances
+- This is the number that becomes the label floor in Week 10.
 
 
 
@@ -1090,7 +912,6 @@
 
 ## 2026-08-07
 
-
 **Worked on:** 
 
 - QPIT Data-set generation
@@ -1099,7 +920,7 @@
 
 **Progress:**
 
-- Today, I spent my time preparing for the date-set generation
+- Today, I spent my time preparing for the data-set generation
 - While preparing I arrived at a few conclusions
 
 - If I just continue through a family of QPITs and label that as positives and then generate a box of points around L2 as negatives, then the dataset would be horrible
@@ -1111,7 +932,9 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
+- The plan to test sample condititions for being able to seed a QPIT turned out to not work at all
+- Please look to the next days entry for greater detail
 
 
 
@@ -1122,7 +945,6 @@
 
 
 ## 2026-08-09
-
 
 **Worked on:** 
 
@@ -1144,8 +966,48 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
 
+- The reframe was influenced by more than what was covered in this days log
+
+- The phase space is 6-D; Jacobi conservation confines motion to a 5-D energy manifold; tori are 2-D and the family sweeps them into a 3-D sheet at fixed C
+- Codimension two, hence Lebesgue measure zero "Always answer no" scores 100% 
+- Sharpening: KAM's positive-measure guarantee concerns maximal-dimension tori, which in three degrees of freedom are 3-tori
+- Mine are 2-tori, so the guarantee does not apply
+
+- The tolerance patch fails
+- With a tolerance the label becomes a property of the tolerance
+- The binary label flipped between 1.6 m and 16 m of displacement on a 202 km torus
+- At a 10× margin four points all sitting on genuine tori read False/True/True/False depending only on phase, with underlying distances differing by 3×
+
+- All forward-time indicators are dead
+- R_u = 146.32 on L2 halo #29 → at rtol 1e-12, integrator error reaches O(1) after about four stroboscopic periods
+- NAFF, weighted Birkhoff / Das-Yorke, FLI, and MEGNO each need one to two orders of magnitude more
+- Each decimal digit buys ~0.46 periods, so even 30-digit arithmetic at ~50× the cost reaches ~12 periods
+- Symplectic methods control secular energy drift, which is not the failure here
+- These tori are computable but not observable
+- This is what killed the 08-07 plan.
+ 
+- The gap is full of tori
+- 80/80 candidates interpolated between computed members converged to genuine tori, with fitted exponent 2.003 — the signature of pure second-order interpolation error
+- i.e. a smooth continuous surface with linear interpolation as the only source of error
+- So the positive class is not 17 thin sheets; it is a nearly solid 3-D region with exponentially thin holes at resonances, and the naive labelling was wrong essentially everywhere
+
+- The probe score is not a distance
+- It scales as gap² so it reports local family curvature and my discretisation choice
+- Not a property of the query point
+- Densify by 2× and the same state's score falls by 4× with nothing physical having moved
+
+- `torus_field.surface_distance` measures distance to the interpolated family surface directly, with no integration
+- 320 states/s vs ~0.4/s for Newton-per-sample
+- Made the Titan port unnecessary and Risk 7 was retired 
+- Dataset size stopped being the constraint and coverage became it
+
+- Regression on log distance, classification recovered by thresholding
+- Store the continuous distance, train on it, report every classification metric as an accuracy-vs-tolerance curve
+- Strictly more information than a single accuracy number, and the arbitrary threshold becomes a reported axis instead of a hidden choice
+
+- A distance field has a gradient a solver can descend, so it can warm-start a GMOS or collocation solve, a classifier cannot
 
 
 **Next session:**
@@ -1155,7 +1017,6 @@
 
 
 ## 2026-08-11
-
 
 **Worked on:** 
 
@@ -1173,7 +1034,18 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
+
+**GATE: Phase 3 exit — MET.** Family of QPITs computed and labeled
+
+- In total the data-set had 20,400 rows, L1 + L2 × 3 energies (C = 3.029398206, 3.064703461, 3.130606605)
+- Three-arm sampling: on-surface, offset along normals, offset along random directions, with distance drawn log-uniform by design
+- The floor was measured at 155 mm, from the σ₃ result 
+- Below it the surface is not determined however finely you densify, so `log_d_km = log10(max(d_km, 1.55e-4))` and rows below are flagged `at_floor`
+- Densifying past g = 12.3 km buys nothing
+- Note: R² will be measured against a arbritary marginal distribution, since d was drawn log-uniform by design
+- It is not a property of phase space The baselines are the meaningful comparison
+- Bug caught before generating at scale: one of 200 on-surface points came back at 448 m instead of ~0, at a gap boundary Would have corrupted the dataset silently
 
 
 
@@ -1184,7 +1056,6 @@
 
 
 ## 2026-08-12
-
 
 **Worked on:** 
 
@@ -1198,7 +1069,22 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-18**
+
+- While watching these videos I ran some tests in the background
+- Predicted that continuing the family into the 2/7 resonance would terminate it
+- Falsified — the family crossed 2/7 without terminating
+- I think this happened because I had selected the target by smallest ρ-distance rather than smallest denominator q, and q = 7 is not low-order, so the resonance zone is too thin to detect
+- Retargeted to 1/4, verified reachable and parameterised
+
+- Second failure: 
+- As the family approaches 1/4 the extrapolation-error budget collapses from 75 km to 0, so non-convergence cannot be separated from a poor seed
+- The family curvature that signals the resonance is the same thing that destroys linear extrapolation 
+- Risk 18 realised
+
+- Secondary Question 2 reframed from "ML accuracy degrades near resonances" to characterisation: 
+- Detectability threshold in q (invisible at q = 7, strong at q = 4), κA² breakdown at 90% of predicted resonance amplitude, power-law repulsion d ~ A^−2.57, Fourier resolution growth 31 → 41 → 51
+- Do not spend further Phase 4 time on this
 
 
 
@@ -1209,7 +1095,6 @@
 
 
 ## 2026-08-13
-
 
 **Worked on:** 
 
@@ -1227,7 +1112,81 @@
 
 
 
-**Stuck on / questions:**
+**Amended 8-22**
+
+- The first run of `nb11_first_regressor.ipynb` produced an anomaly: 
+- The B1 shortcut baseline scored R² = +0.816 where it was predicted to score near zero
+- M1, with strictly more information, scored worse at 0.567
+- This is not a modelling failure, it is a signal that a feature carries the answer
+
+- Diagnosed with `nb11_diag_shortcut.py` (ablations, grouped split, same learner throughout)
+- My stated hypothesis was that the stored `C` column encoded the offset
+- That was falsified
+- The stored `C` has exactly three distinct values — 3.029398206, 3.064703461, 3.130606605
+- Zero spread inside each sheet, identical across L1 and L2
+- It is the sheet energy, and it is clean: R² = −0.0001 alone
+- The leak was the recomputed per-state Jacobi constant, which `features.py` was substituting in: R² = +0.7976 alone
+
+- Why the per-state Jacobi is an artifact rather than legitimate information: 
+- At inference you can compute a query state's C, so it looks fair
+- It is not, because only three energy sheets were sampled
+- With three, "distance in energy from the nearest sheet" is a near-deterministic function of the offset
+- Real QPIT families fill a continuous energy range, so every state sits close in energy to some torus and the proxy evaporates
+- This is a coverage artifact, the constraint the tracker named when it retired Risk 7.
+
+- Corrected ablation, grouped split:
+- | features | R² |
+- | positions only (dist L1, dist L2) | +0.3606 |
+- | positions + sheet C | +0.3615 |
+- | full state, no C | +0.2253 |
+- | full state + sheet C | +0.2372 |
+
+- Note that the full state scores below engineered distances 
+- Axis-aligned tree splits cannot form a Euclidean radius
+- Legitimate feature-engineering effect
+
+- Scorecard, clean rerun 
+- predictions unchanged from before the first run:
+
+- | | outcome | |
+- | P1 shortcut baseline fails (R² < 0.5) | HELD | B1 = +0.3615 |
+- | P2 1-NN gap random > grouped by >0.1 | FALSIFIED | random −0.0336, grouped −0.0305, gap −0.0031 |
+- | P3a near-field RMSE exceeds far-field | HELD | 1.2285 vs 1.1019 |
+- | P3b near-field bias positive | HELD | +1.1819 |
+- | P3c overall R² > 0.9 | FALSIFIED | M1 = +0.5391 |
+
+- Week 11 result: M1 = 0.539, B1 = 0.362, B0 ≈ 0
+- The regressor beats the shortcut baseline by ~0.18 R² and beats the mean predictor decisively 
+
+- P2's falsification is uninformative rather than meaningful
+- Both B2 scores are negative, and a baseline at zero cannot resolve a gap
+- The evidence about row dependence comes from the group census instead 
+- 6,564 groups over 20,400 rows, median group size 2, 1,762 singletons, groups/rows = 0.32
+- Base points were drawn continuously, so rows are nearly independent by construction and there was little duplication for grouping to protect against
+- This also means `group_id` is doing almost no work
+
+- The scorecard as first written printed "P3c falsified means Risk 19 was right and the Cantor-set framing stands" 
+- That inference is wrong and must not reach the paper
+- The labeller measures distance to a densified interpolated continuum at ~12.3 km spacing
+- So, it cannot resolve the gaps between tori 
+- That structure is not present in the target as generated 
+- Risk 19 stays untested; this experiment has no power over it
+
+- Two bugs caught:
+- `nearest_point_overlap` computed its mixed-radix packing from each side's own key array 
+- The MLP's `patience=30` default stopped a fit after ~95 gradient steps and returned a mean-predictor while reporting `early_stopped=True` as though converged
+
+
+
+**Amended 8-23.**
+
+- The P3a/P3b line above is the pre-fix scoring and does not match what Week 12 works from
+- P3a was rescored on residual SD instead of RMSE, because RMSE contains the bias and cannot independently show heteroscedasticity
+- On SD it is FALSIFIED: near 0.3429 against far 0.6267, while near RMSE stays higher at 0.9440 vs 0.6682
+- So the near-field error is almost all bias with tighter scatter, not noisier fitting
+- P3b holds at +0.8795 on measured rows only, censored rows excluded
+- M1 also moved, 0.539 -> 0.632 +/- 0.020, after the epoch budget went to 3000/150/50
+- The 600-epoch default had ended all three seeds on the ceiling with val loss still falling
 
 
 
@@ -1238,7 +1197,6 @@
 
 
 ## 2026-08-14
-
 
 **Worked on:** 
 
@@ -1252,10 +1210,169 @@
 
 
 
-**Stuck on / questions:**
+**Next session:**
+
+- Making network more accurate
+
+
+
+## 2026-08-17
+
+**Worked on:** 
+
+- Auditing repo
+
+
+
+**Progress:**
+- Today I primarily audited and fixed small holes, errors, and inconsistencies across the repo
 
 
 
 **Next session:**
 
 - Making network more accurate
+
+
+
+## 2026-08-18
+
+**Worked on:** 
+
+- Auditing repo
+
+
+
+**Progress:**
+- Almost finished auditing and fixing up the repo
+- I have added a lot of missing tests to insure my code is not broken
+
+
+
+**Stuck on / questions:**
+
+- There are a few bugs that have been in the codebase unfound for a while, but none of them are substantial enough to cause any concern or need of the data to be regenerated
+
+
+
+**Amended 8-23.** 
+
+- The line above is right about the bugs, but it needs one exception on the record: 
+- L2_E2 did need regenerating, for a reason unrelated to any of them
+
+- nb10 recorded it at generation time as max gap 53.66 km, error bound 1.916 m, 9 failed probes
+- That is 12.4x the 0.155 m reproducibility floor, where the other five families sat near 0.09 m
+- It left 562 measured rows (3.14%) sitting below their own error bound
+- I had assumed that was a real gap in the family,but it's not
+- `probe_gap` returns `max_iter` at the default `itmax=15`
+- At `itmax=40` the same midpoint converges to `res_inf = 6.3e-11`, and so does every other alpha I tried (0.2, 0.35, 0.65, 0.8)
+- Resonance is ruled out, the bracketing members sit at `d_res = 0.0787`
+- It was an iteration budget shortfall
+- L2_E2 needs more Newton iterations than the others because its members sit at `rho/2pi ~ 0.0787` against HALO29's 0.293, which is a harder Newton problem
+- Re-densified at `itmax=40` with a finishing pass at 80:
+- 25 -> 54 members, 53.66 -> 11.92 km max gap, 1.916 m -> 0.095 m bound (0.61x floor), 9 -> 0 failed probes, pure infill over the same 23.9 - 395.3 km span
+- Saved as `data/families/L2_E2_dense.npz`
+- `L2_E2.npz` is deliberately untouched, because `qpit_dataset_w10.npz` was built from it.
+- `data/famC_dense.npz` was missing entirely (data/ is gitignored), so all 10 tests in `test_torus_field.py` had never actually run
+- Rebuilt 17 -> 67 members, 0.072 m bound
+- It reproduces the recorded `PROBE_CAL = 1.1433` and those 9 skips are now green.
+
+- What it changes going forward:
+
+- I am not re-running Weeks 11/12 over it
+- Re-scoring P3a/P3b from the frozen `predictions_wk11.npz` with L2_E2 dropped entirely (17% of test rows) moves the near-field bias +0.8795 -> +0.8247, a 6.2% shift
+- It flips no verdict
+- P3a stays falsified and, P3b stays held
+- Swapping the dense family in means re-running nb10, which regenerates `qpit_dataset_w10.npz` and invalidates Weeks 11-12 until they are re-run
+- Batching it for after Week 12 closes, together with the `normal_directions` fix and an `mknb10.py` written first, so I invalidate those results once instead of three times
+- Payoff when I do: 562 -> 0 measured rows below their bound
+- Every row still under the new bound is already `at_floor`, so its target is clamped and the error cannot propagate
+- All six families would then have a labelling limit set by the reproducibility floor rather than by family spacing, which is what the whole densification argument was aiming at
+- Rule I am taking from this: when a probe fails with `max_iter`, raise `itmax` before concluding the family has a gap
+- The default 15 is not enough at low rho.
+
+
+
+**Next session:**
+
+- Making network more accurate
+
+
+
+## 2026-08-23
+
+**Worked on:** 
+
+- Tobit loss and asinh target, run as a 2x2 against the frozen Week 11 baseline
+
+
+
+**Progress:**
+
+- Step 0 cleared all three gates
+- Censored 2502/20400 = 12.26%, and it sits where the sampler puts it: all 2400 `surface` rows, 1.67% of `bundle`, 0.40% of `offset`
+- Drawn vs measured came back med_ratio 0.9999, IQR ~0.001, in every one of twelve bins from 0.2 m to 100 km
+- I had set that up to check FLOOR_KM independently and it cannot
+- It measures precision against the same interpolated surface; the floor is an accuracy limit, how far apart two derivations of one torus land
+- Censoring is still right, but the reason is surface determination, not measurement resolution
+- It did independently reproduce the `normal_directions` bug size: 0.9999 puts the residual tangential component at ~1.4% of the step
+- Dead zone reproduces, constant 6.54-6.58 m, boundary 124.62 m, slope -0.976 to -0.979, identical at n_bins 12/18/24
+- n_bins=36 reported a 6.23 m constant sitting above a 3.04 m boundary and got flagged automatically
+- A constant outside the range it was constant over is incoherent, so that row is the fixed 0.10 tolerance truncating on bin noise
+- delta anchored to the boundary, which flattens 2.905 of 5.810 decades, half the range and exactly the half the model already fails in
+- M1 reproduced at 0.6288 +/- 0.0214 on measured rows against 0.632 +/- 0.020
+
+- 32 fits, 2h05
+- Both changes lost, at every delta, on every metric in physical km
+- At delta = 124.6 m, near-field fraction within a factor of 10: M1 0.664, M2a 0.434, M2b 0.637, M2c 0.476
+- asinh's cost is monotone in how much it flattens: 0.638 / 0.489 / 0.434 / 0.368 across the four deltas
+- Near-field bias went the wrong way under every change, 0.184 -> 1.177 for M2a
+
+- The thing worth keeping from this week: M2a scored val MSE 0.148-0.162 against M1's 0.362-0.396
+- In its own target space that is R2 0.85 vs 0.62, a large clean-looking win
+- In physical km it is 43% within a factor of 10 against M1's 66%
+- Scored in target space I would have reported asinh as a success and recommended it
+- R2 is only scale-invariant under an affine change of target, and asinh is not affine in log10 d
+- The near-field factor-of-N table in km caught it, and only because it was fixed as the arbiter before the run
+
+- Scorecard: P12a HELD, P12b HELD, P12c FALSIFIED (dR2 -0.0375), P12d FALSIFIED (-0.1875 vs 2sd 0.0429), P12e FALSIFIED on its first clause, P12f held vacuously (0.000 -> 0.001)
+- P12e's second clause is supported: Tobit alone hurts, Tobit on top of asinh helps at three of four deltas on both metrics
+- The operating point shows why, asinh moves the prediction from 1.43 sigma above the censoring threshold to 0.43
+- That is where the censoring statement starts carrying information instead of just pushing harder
+- I predicted t = -1.44 and lambda/|t| = 1.311 from the fitted sigma, measured -1.43 and 1.313
+
+- P3's mechanism does not survive this
+- I attributed the dead zone to grad(log d) ~ 1/d being unbounded against a bounded network gradient
+- asinh is exactly the fix for that, and applying it made the dead zone worse, monotonically in delta
+- The observation stands, flat output and slope -1, The attribution does not
+- Competing reading is an information limit: if the features do not determine d below 125 m then a constant is the right answer there and no target change can help
+- That also explains why near-field SD is smaller than far-field, which never sat right under the gradient story
+
+- M2b's number is contaminated
+- Seed 2 inflated log_sigma from -0.4876 to +0.1073, never left the loss plateau at 1.4808, stopped at epoch 172 and reported `early_stopped=True`
+- Same silent failure as the `patience=30` bug from 08-13, reached a different way, and `losses.py` had asserted in its own docstring that it would not happen
+- It got averaged into a five-seed band as though it were a fit
+- 0.4271 +/- 0.2865 is not a measurement
+- Backing it out puts the four that trained near 0.53, still below M1, so the verdict holds but the number needs an asterisk wherever it is quoted
+- Fixed by detection rather than clamping, since clamping log_sigma zeroes its gradient and freezes it at the bound
+- `train_mlp` now records `val_r2` and flags a mean predictor, and the scorecard counts dead seeds beside budget-limited ones
+
+- Mutation tested the five new modules, 21 injected bugs, 18 caught and 3 survived
+- All three were real gaps I would not have found by reading the tests
+- Green suite proves nothing on its own, confirmed the hard way
+
+
+
+**Stuck on / questions:**
+
+- The gate fired `regenerate, grid refinement required` on d_near = -0.1875
+- That is the registered rule satisfied, but on different evidence than it was written for
+- I wrote it for "no gain, therefore data-limited", and what happened is that both levers actively hurt
+- Stronger evidence, but it does not prove modelling is exhausted, only that my mechanism was wrong
+- Want to settle that before committing compute to a regeneration
+
+
+
+**Next session:**
+
+- Mutual information between features and d, restricted to rows below 125 m, on the frozen dataset with no fitting

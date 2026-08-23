@@ -58,14 +58,12 @@ without the term and 3.072337427 with it.  `tests/test_features.py` pins this.
 
 import numpy as np
 
-#: MUST equal `cr3bp.MU_EARTH_MOON` and `cr3bp_3d.MU_EARTH_MOON` EXACTLY.
-#: Keeping a local copy is deliberate -- see the module docstring on staying
-#: independent of `cr3bp_3d` -- but it is a COPY, not a different number.  It
-#: was previously truncated to 0.012150585609624 (23 ULP low), which shifted a
-#: computed C by ~4e-16 and left feature-C and solver-C differing in the last
-#: bits for no reason.  `tests/test_cr3bp.py` pins the three-way equality.
-MU_EARTH_MOON = 0.01215058560962404
-LU_KM = 384400.0
+# mu and LU_KM come from constants.py, which is the single definition for
+# the whole project.  This module keeps its own `jacobi_constant` independent
+# of cr3bp_3d on purpose (see the module docstring) -- that independence is
+# about the CONVENTION, not about holding a different number.  It used to
+# hold a truncated copy (0.012150585609624, 23 ULP low).
+from constants import MU_EARTH_MOON, LU_KM   # re-exported: see constants.py
 
 STATE_NAMES = ('x', 'y', 'z', 'vx', 'vy', 'vz')
 
