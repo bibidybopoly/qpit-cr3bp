@@ -1376,3 +1376,124 @@
 **Next session:**
 
 - Mutual information between features and d, restricted to rows below 125 m, on the frozen dataset with no fitting
+
+
+
+## 2026-08-30
+
+**Worked on:** 
+
+- Mutual information between features and d, near vs far field, on the frozen dataset with no fitting
+- Triage benchmark
+
+**GATE: Phase 4 exit — MET.** Train QPIT model, characterize phase-space-resolved performance, benchmark speedup. After this, paper is writeable.
+
+
+
+**Progress:**
+
+- Regeneration cut
+- My own audit is what settled it: dropping L2_E2 entirely moves near-field bias 6.2% and flips no verdict
+- The 562 rows below their bound go in Limitations
+- Weeks 14 and 16 also cut, so the calendar is 13, 15, then writing
+
+- `src/mi.py` and `tests/test_mi.py`, 42 tests, mutation 28/28
+- Two real bugs, both found by tests rather than by reading
+- `_knn_radius` checked the k-th neighbour radius for zero instead of the nearest
+- With k=5 and one twin per point the k-th radius is positive while the tie-free assumption is already broken, so the estimate comes back finite, plausible and wrong
+- Bootstrap resampling produces exactly that case on almost every draw
+- `make_windows` documented the near window as [floor, boundary] and only enforced the upper bound
+
+- The `nextafter` strictness mutant survived the first pass
+- On continuous data it shifts the estimate 0.009 nats at n=6000, below the seed-to-seed spread, so no tolerance on the Gaussian oracle separates it
+- Killed with an integer lattice, where ties at the k-NN radius are the rule instead of an accident: 2.16 nats separation on input with no randomness
+
+- `build_features` returns 9 columns and THREE of them are categorical, not one
+- C has 3 distinct values (three energy levels), family_0/family_1 are binary
+- `copula_transform` breaks ties by row order, so a categorical column makes the estimate depend on archive storage order
+- Handled by the exact chain rule I([X,G];Y) = I(G;Y) + I(X;Y|G), conditioning on G = (family_id, energy_id), 6 cells at exactly 3400 rows each
+- Verified C constant within energy_id and the map one-to-one, so the decomposition is an identity, not an approximation
+- Continuous block is the 6 state components only
+
+- The pre-registered calibration gate fired, and the bootstrap turned out to be the cause
+- It inflated MI by a fixed +0.19 nats at every true value, an offset rather than a spread
+- Bootstrap is invalid for k-NN estimators: resampling with replacement duplicates ~26% of rows, the 1e-12 jitter separates twins by far less than the ~1e-4 spacing of real neighbours, and the radii collapse
+- Removed from the arbiter, significance now from the permutation null which creates no duplicates
+- The point-estimate under-read is local: -0.003 at true R2 0.05, -0.101 at 0.75
+- A global worst-case correction left +0.0007 of usable slack, so the map is inverted locally instead, 7 grid points x 5 reps, interior LOO 0.0002 to 0.021, refusing to extrapolate
+- Amendment logged 08-28, all of it decided from synthetic data before any window statistic existed
+
+- One tied target pair in 17898 in-window rows, `offset` sampler, different groups, multiplicity 2
+- Chance float collision, expected at order one for ~9000 values over ~3 decades in float32
+- Dropped one row chosen at random; keeping the first would correlate the survivor with archive order
+- `n_below_floor` = 0, so my diagnosis of the tie as the log10(max(d, FLOOR)) clamp manufacturing an atom was wrong
+- There were no sub-floor measured rows at all. Observation right, mechanism wrong, same pattern as P3
+
+- near I_total -0.0046 nats, inside its own permutation null (p95 0.0132), k sweep -0.0073 / -0.0046 / -0.0068
+- far 0.2476 nats, above its null (p95 0.0281), all six cells positive, k sweep 0.2934 / 0.2476 / 0.1915
+- Matched at n = 8908 per window, same 6 dimensions, same cells
+- P13.1 PASS, P13.2 CONFIRMED, P13.3 INFORMATIONAL on leg A
+- Thinned to 31%: near -0.0174 still inside its null, far 0.1565 still above
+- Far magnitude drops 0.2476 -> 0.1565 under thinning, real inflation from dependent rows, conclusion unmoved
+- Gaussian-equivalent R2, stated as an assumption not a proof: near <= 0.026, far ~0.39 (0.44 to 0.32 across k)
+
+- Leg B, the ceiling, is VOID and the reason is worth keeping
+- The Shannon bound has an information-free floor of 1 - N/Var, which is zero only for a Gaussian target
+- log_d_km is near log-uniform here, N/Var 0.6967 against 0.7026 for a uniform, so the floor sits at 0.303 and the bound cannot discriminate below it whatever the MI is
+- My calibration matched n, dimension and cell structure and used a Gaussian target, where the floor is ~0
+- The one axis it did not match is the one the entropy-power term depends on
+
+- Tier-1 needed a null before it could be read at all
+- Max-statistic permutation null for family-wise control, since 12 comparisons at a per-test 95th expects about one spurious hit
+- Family-wise 0.0254 near / 0.0235 far, per-test 0.0186 / 0.0187
+- Near: nothing clears either threshold, `vz` 0.0099 and `vx` 0.0092 were never significant on their own terms
+- Far: only `x`, at 0.1210. The y/z/vx cluster at 0.0116-0.0129 is below both
+- Categorical threshold differs by window, 0.0052 near vs 0.0251 far, because it is a KL difference on raw log10 d and not distribution-free like the ranked ones
+- Data processing check: near +0.0165 against a joint null of 0.0190, both consistent with zero
+- Far -0.2362, so the joint exceeds its largest marginal by 0.24 bits and the far-field information sits in combinations, not one coordinate
+
+- Within-window R2 is negative, -0.133 near and -0.887 far, against 0.628 overall
+- Restricted range, not a bug, and the arithmetic closes: residual variances 0.799 and 1.295 average 1.047 against the overall 1.046
+- Residual sd ~1.02 decades, so M1 resolves WHICH DECADE a state sits in and not where inside it
+- That is the same fact as 66% within a factor of 10, seen from another side
+
+- P13.0 retired rather than skipped: the MI result settles the benchmark reading more strongly than the eikonal check could have
+- A warm start has to place a state accurately in exactly the regime where nothing is detectable
+- The raw inference-to-solve ratio is NOT the speedup and must not be reported as one
+- Triage decides whether to attempt a solve, it does not replace one, so the cap is 1/(1-S)
+- t_infer 0.854 us/row, so screening every candidate costs under 0.001% of one solve and the cap is binding
+- At 95% recall, D_OP = boundary: S = 0.342 +/- 0.008, 115 missed of 2289, cap 1.52x
+- P13.4 FALSIFIED (0.342 against 0.40), P13.5 CONFIRMED, P13.6 triage useful
+- 2289 of 4035 held-out rows are worth solving, 56.7%, so a perfect predictor caps at 1.76x
+- M1 reaches 79% of the achievable solves-avoided, and the cap is set by class balance, not by the model
+- Specificity is the number that survives a change of sampling design: 1265 of 1746 not-worth-solving rows correctly skipped, 72%
+- 539 censored + 1750 measured near = 2289, third independent confirmation of the split reconstruction
+
+- On-surface rows are NOT protected by the dead zone, which I had predicted they would be
+- 23 of 539 skipped at 95% recall, a 4.3% miss rate against 5.3% for measured near rows
+- Marginally better than the class average, but not immune, and my prediction was 1.000
+- The dead zone says where the model LANDS when it fires, not how reliably it fires
+- Consistent with the MI result: nothing distinguishes an on-surface point from a nearby off-surface one, so d = 0 earns no protection
+- Misses split 22 surface / 1 offset, which is the 95.9% surface base rate exactly
+
+
+
+**Stuck on / questions:**
+
+- `week11_m1_r2` = 0.6576 in results_wk12.json matches neither 0.632 nor 0.6288
+- All held-out rows gives 0.6269, so it is not a censored-rows population difference
+- The archive now offers three M1 R2 values and the paper will quote one
+
+- Censored misses split 16 L2 / 7 L1 and I have no base rate to read that against
+- If censored rows are near-even by family it is z ~ 1.9, marginal at n = 23
+- It also runs opposite to the far-field per-cell MI, where L2 carried about twice L1
+
+- `scorecard` has no budget_ltd or dead_seeds column, so that check could not be run as written
+- r2_sd settles it anyway: M1 0.0214 against the 0.35 one dead seed would force
+- M2b's 0.2865 matches the one-dead-seed prediction to three decimals, which is the seed 2 collapse
+
+
+
+**Next session:**
+
+- Week 15, cross-family transfer, with only 2 families in the archive
