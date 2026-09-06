@@ -458,6 +458,52 @@ def halo_periodicity_constraint(X, mu):
     return F, dF, final_state
 
 
+def first_orbit(point, mu, Az=0.05, northern=True):
+    """Richardson seed -> corrector -> one on-family halo [x0, z0, vy0, T_half].
+
+    PROMOTED FROM THE NOTEBOOKS.  This lived in `halo_families.ipynb` and
+    `floquet_analysis.ipynb` as two pasted copies which had already drifted --
+    one wrote `T / 2.0`, the other `T / 2` -- and a third copy was about to be
+    made in `notebooks/time_solve.py`.  Same fix `metrics.dead_zone` records for
+    nb11 section 9: one implementation, three importers.
+
+    `northern` is flipped at L2 so the seed has +z at BOTH points.  That is not
+    a detail to re-derive at each call site; it is the reason a shared copy
+    matters.
+
+    cr3bp_3d is imported inside the function, matching `compute_halo_family`,
+    so importing this module stays free of the 3D stack.
+    """
+    from cr3bp_3d import richardson_halo_seed, halo_corrector
+    seed_flag = northern if point == 'L1' else (not northern)
+    seed, _, _ = richardson_halo_seed(Az, mu, point=point, northern=seed_flag)
+    s0, T, ok = halo_corrector(seed, mu)
+    if not ok:
+        raise RuntimeError(f"{point} halo corrector failed to converge "
+                           f"from a Richardson seed at Az={Az}")
+    return np.array([s0[0], s0[2], s0[4], T / 2.0])
+
+
+def amplitude_direction(X, mu):
+    """Pseudo-arclength tangent pointed toward growing |z0|, i.e. deeper into
+    the halo family rather than back toward the planar bifurcation."""
+    _, dF, _ = halo_periodicity_constraint(X, mu)
+    t = family_tangent(dF)
+    return t if np.sign(t[1]) == np.sign(X[1]) else -t
+
+
+def halo_family(point, mu, Az=0.05, northern=True, ds=0.01, n_orbits=130):
+    """Seed, correct, and continue a halo family in one call.
+
+    Defaults are the ones the notebooks used, so a call with no keywords
+    reproduces the families behind the Week 15 timing and the Floquet sweep.
+    """
+    X0 = first_orbit(point, mu, Az=Az, northern=northern)
+    return compute_halo_family(X0, ds=ds, n_orbits=n_orbits, mu=mu,
+                               initial_direction=amplitude_direction(X0, mu),
+                               verbose=False)
+
+
 def compute_halo_family(X_start, ds, n_orbits, mu,
                         initial_direction=None, verbose=True):
     """Halo family via pseudo-arclength continuation.

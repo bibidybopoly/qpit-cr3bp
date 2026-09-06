@@ -332,3 +332,124 @@ def format_table(rows, cols=None, float_fmt='{:>10.4f}'):
         out.append('  '.join(cell(r.get(c, '')).rjust(w)
                              for c, w in zip(cols, widths)))
     return '\n'.join(out)
+
+
+def retention(y_true, pred_transfer, pred_control, mask=None,
+              min_control_r2=0.05, se_multiple=2.0):
+    """Week 15's primary metric: transfer R^2 as a fraction of control R^2.
+
+    WHY A RATIO AND NOT A DIFFERENCE OF R^2.  Raw test R^2 is not comparable
+    across Week 15's folds.  Converting the Week 13 per-cell far-field MI at
+    rho^2 = 1 - exp(-2I), the Gaussian-equivalent ceilings are L1 ~ 0.19 / 0.24
+    / 0.28 and L2 ~ 0.39 / 0.53 / 0.58: testing on L2 outscores testing on L1 by
+    about a factor of two before any model is fit.  Dividing by a control
+    scored on the SAME rows removes the ceiling.  (The MI ceilings motivate the
+    choice; they are never used as the denominator -- that is empirical.)
+
+    WHY PREDICTIONS AND NOT TWO R^2 VALUES.  The invariant that makes retention
+    mean anything is that numerator and denominator are computed over identical
+    rows.  A signature taking two scalars cannot enforce it; this one applies a
+    single mask to both.
+
+    WHY THE DENOMINATOR IS GUARDED.  R^2 is unbounded below, so a ratio of two
+    negatives is positive: a transfer R^2 of -0.5 over a control of -0.2 is
+    2.5, which prints as 250% retention when both models have failed.  The
+    ratio is only reported when the control clears `min_control_r2` AND exceeds
+    `se_multiple` standard errors of its own seed spread.  Otherwise `defined`
+    is False and `reason` says which test failed.  Both thresholds were fixed
+    before any Week 15 fit.
+
+    Parameters
+    ----------
+    y_true : (n,) targets in log10 km.
+    pred_transfer, pred_control : (n,) or (n_seeds, n) predictions, same rows.
+    mask : boolean over n, selecting rows by LABEL only -- see the module note.
+    min_control_r2 : floor on the denominator.
+    se_multiple : the control must exceed this many standard errors of zero.
+
+    Returns
+    -------
+    dict with `retention`, `se`, both R^2 values and their per-seed spreads,
+    `defined`, and `reason`.  `se` is the delta-method propagation
+    |A/B| * sqrt((se_A/A)^2 + (se_B/B)^2), which assumes the two fits are
+    independent -- they train on different rows with different seeds, so that
+    is approximately true and is stated rather than proved.
+    """
+    y = np.asarray(y_true, dtype=float).reshape(-1)
+    A = np.atleast_2d(np.asarray(pred_transfer, dtype=float))
+    B = np.atleast_2d(np.asarray(pred_control, dtype=float))
+    if A.shape[1] != y.size or B.shape[1] != y.size:
+        raise ValueError(f"predictions must be over the same {y.size} rows; "
+                         f"got {A.shape} and {B.shape}")
+
+    def _per_seed(P):
+        r2s = []
+        for s in range(P.shape[0]):
+            yy, pp = _apply_mask(y, P[s], mask)
+            r2s.append(regression_metrics(yy, pp)['r2'])
+        return np.asarray(r2s, dtype=float)
+
+    a, b = _per_seed(A), _per_seed(B)
+    # Mean of per-seed R^2, never the R^2 of the seed-averaged prediction.
+    # Ensembling flatters: Week 11's 0.6324 became 0.6576 that way.
+    a_bar, b_bar = float(a.mean()), float(b.mean())
+    se_a = float(a.std(ddof=1) / np.sqrt(a.size)) if a.size > 1 else float('nan')
+    se_b = float(b.std(ddof=1) / np.sqrt(b.size)) if b.size > 1 else float('nan')
+
+    n_rows = int(np.asarray(mask).sum()) if mask is not None else int(y.size)
+    out = dict(r2_transfer=a_bar, r2_control=b_bar,
+               r2_transfer_per_seed=a.tolist(), r2_control_per_seed=b.tolist(),
+               se_transfer=se_a, se_control=se_b,
+               n_seeds_transfer=int(a.size), n_seeds_control=int(b.size),
+               n_rows=n_rows, retention=float('nan'), se=float('nan'),
+               defined=False, reason=None)
+
+    if b_bar < min_control_r2:
+        out['reason'] = (f"control R2 {b_bar:.4f} below min_control_r2 "
+                         f"{min_control_r2}; the ratio is not interpretable "
+                         f"and a negative-over-negative ratio would be "
+                         f"positive")
+        return out
+    if b.size > 1 and np.isfinite(se_b) and se_b > 0 \
+            and b_bar < se_multiple * se_b:
+        out['reason'] = (f"control R2 {b_bar:.4f} is within {se_multiple} SE "
+                         f"({se_b:.4f}) of zero; the denominator is not "
+                         f"distinguishable from no signal")
+        return out
+
+    ratio = a_bar / b_bar
+    se = float('nan')
+    if np.isfinite(se_a) and np.isfinite(se_b) and a_bar != 0.0:
+        se = abs(ratio) * float(np.sqrt((se_a / a_bar) ** 2
+                                        + (se_b / b_bar) ** 2))
+    elif np.isfinite(se_a):
+        se = abs(se_a / b_bar)          # numerator at zero: ratio is 0 +/- this
+    out.update(retention=float(ratio), se=se, defined=True)
+    return out
+
+
+def retention_difference(ret_a, ret_b):
+    """Resolve a pre-registered ordering between two retentions.
+
+    P15.2 and P15.3 both compare two folds, and the pre-registration resolves
+    each to confirmed, falsified, or UNRESOLVED: a difference smaller than the
+    pooled spread is not a direction.  Far-field test n runs 569-923 across the
+    five folds, so unresolved is a live outcome and encoding it here keeps it
+    from being read as a weak confirmation.
+
+    Returns the signed difference `ret_a - ret_b`, the pooled SE, and a verdict
+    in {'a_greater', 'b_greater', 'unresolved', 'undefined'}.
+    """
+    if not (ret_a.get('defined') and ret_b.get('defined')):
+        return dict(verdict='undefined', difference=float('nan'),
+                    pooled_se=float('nan'),
+                    reason=ret_a.get('reason') or ret_b.get('reason'))
+    d = ret_a['retention'] - ret_b['retention']
+    sa, sb = ret_a.get('se', np.nan), ret_b.get('se', np.nan)
+    pooled = float(np.sqrt(np.nansum([sa ** 2, sb ** 2])))
+    if not np.isfinite(pooled) or pooled == 0 or abs(d) <= pooled:
+        verdict = 'unresolved'
+    else:
+        verdict = 'a_greater' if d > 0 else 'b_greater'
+    return dict(verdict=verdict, difference=float(d), pooled_se=pooled,
+                n_sigma=float(abs(d) / pooled) if pooled else float('inf'))

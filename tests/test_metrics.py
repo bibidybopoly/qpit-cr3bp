@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 from metrics import (regression_metrics, accuracy_vs_threshold,
                      summarize_threshold_curve, accuracy_vs_error_tolerance,
                      factor_table, residual_bins, dead_zone, mcc, balanced_accuracy,
-                     format_table, FACTORS)
+                     format_table, FACTORS, retention, retention_difference)
 
 
 def _raises(exc, fn, *a, **kw):
@@ -284,6 +284,135 @@ def test_dead_zone_honours_the_mask():
     p = np.where(y < np.log10(0.125), -2.2, y)
     floor = y <= -3.8
     assert dead_zone(y, p, n_bins=12, mask=~floor)['k'] >= 3
+
+
+# =========================================================================
+# WEEK 15 -- RETENTION
+# =========================================================================
+
+def _seeded(y, noise, n_seeds=5, seed=0):
+    """Predictions that track y with a given error scale, one row per seed."""
+    rng = np.random.default_rng(seed)
+    return np.stack([y + rng.normal(scale=noise, size=y.size)
+                     for _ in range(n_seeds)])
+
+
+def test_retention_is_the_ratio_of_mean_per_seed_r2():
+    """Mean of per-seed R^2, never the R^2 of the seed-averaged prediction.
+    Ensembling flatters: Week 11's 0.6324 became 0.6576 that way."""
+    rng = np.random.default_rng(0)
+    y = rng.uniform(-4, 2, 1500)
+    A, B = _seeded(y, 1.0, seed=1), _seeded(y, 0.6, seed=2)
+    r = retention(y, A, B)
+    a = np.mean([regression_metrics(y, A[s])['r2'] for s in range(5)])
+    b = np.mean([regression_metrics(y, B[s])['r2'] for s in range(5)])
+    assert abs(r['r2_transfer'] - a) < 1e-12
+    assert abs(r['r2_control'] - b) < 1e-12
+    assert abs(r['retention'] - a / b) < 1e-12
+    assert r['defined'] is True
+
+
+def test_retention_refuses_a_negative_over_negative_ratio():
+    """THE TRAP.  R^2 is unbounded below, so two failed models give a POSITIVE
+    ratio: -0.5 over -0.2 is 2.5, which prints as 250% retention.  The guard
+    has to fire on the denominator, not on the ratio."""
+    rng = np.random.default_rng(1)
+    y = rng.uniform(-4, 2, 800)
+    A = np.stack([np.full_like(y, -9.0) + rng.normal(scale=3, size=y.size)
+                  for _ in range(5)])
+    B = np.stack([np.full_like(y, -6.0) + rng.normal(scale=2, size=y.size)
+                  for _ in range(5)])
+    r = retention(y, A, B)
+    assert r['r2_transfer'] < 0 and r['r2_control'] < 0
+    naive = r['r2_transfer'] / r['r2_control']
+    assert naive > 0, "the trap requires both to be negative"
+    assert r['defined'] is False
+    assert np.isnan(r['retention'])
+    assert 'below min_control_r2' in r['reason']
+
+
+def test_retention_refuses_a_control_indistinguishable_from_zero():
+    """A denominator near zero makes the ratio explode.  Both thresholds were
+    fixed before any Week 15 fit."""
+    rng = np.random.default_rng(2)
+    y = rng.uniform(-4, 2, 600)
+    A = _seeded(y, 1.0, seed=3)
+    B = np.stack([np.full_like(y, y.mean()) for _ in range(5)])   # R^2 ~ 0
+    r = retention(y, A, B)
+    assert r['defined'] is False and r['reason']
+
+
+def test_retention_scores_both_sides_on_identical_rows():
+    """The invariant the signature exists to enforce.  A version taking two
+    R^2 scalars could not guarantee it."""
+    rng = np.random.default_rng(3)
+    y = rng.uniform(-4, 2, 1000)
+    A, B = _seeded(y, 0.9, seed=4), _seeded(y, 0.5, seed=5)
+    m = y > 0.0
+    r = retention(y, A, B, mask=m)
+    assert r['n_rows'] == int(m.sum())
+    a = np.mean([regression_metrics(y[m], A[s][m])['r2'] for s in range(5)])
+    b = np.mean([regression_metrics(y[m], B[s][m])['r2'] for s in range(5)])
+    assert abs(r['r2_transfer'] - a) < 1e-12 and abs(r['r2_control'] - b) < 1e-12
+
+
+def test_retention_rejects_predictions_over_the_wrong_rows():
+    y = np.linspace(-4, 2, 100)
+    _raises(ValueError, retention, y, _seeded(y, 0.5)[:, :-1], _seeded(y, 0.5))
+
+
+def test_retention_allows_a_negative_numerator():
+    """Transfer worse than predicting the test mean is a real outcome, not an
+    error.  Only the DENOMINATOR is guarded."""
+    rng = np.random.default_rng(4)
+    y = rng.uniform(-4, 2, 900)
+    A = np.stack([np.full_like(y, 1.5) for _ in range(5)])       # R^2 < 0
+    B = _seeded(y, 0.6, seed=6)
+    r = retention(y, A, B)
+    assert r['defined'] is True and r['retention'] < 0
+
+
+def test_retention_se_grows_with_seed_spread():
+    """Delta-method propagation, assuming the two fits are independent -- they
+    train on different rows with different seeds, which is stated not proved."""
+    rng = np.random.default_rng(5)
+    y = rng.uniform(-4, 2, 1200)
+    B = _seeded(y, 0.6, seed=7)
+    tight = np.stack([y + rng.normal(scale=0.8, size=y.size) for _ in range(5)])
+    loose = np.stack([y + rng.normal(scale=0.8 + 0.3 * i, size=y.size)
+                      for i in range(5)])
+    assert retention(y, loose, B)['se'] > retention(y, tight, B)['se']
+
+
+def test_retention_difference_reports_unresolved_rather_than_a_direction():
+    """P15.2 and P15.3 resolve three ways.  Far-field test n runs 569-923, so
+    unresolved is a live outcome and must not read as weak confirmation."""
+    rng = np.random.default_rng(6)
+    y = rng.uniform(-4, 2, 1000)
+    B = _seeded(y, 0.6, seed=8)
+    a = retention(y, _seeded(y, 0.90, seed=9), B)
+    b = retention(y, _seeded(y, 0.91, seed=10), B)
+    assert retention_difference(a, b)['verdict'] == 'unresolved'
+
+
+def test_retention_difference_resolves_a_clear_gap_with_a_sign():
+    rng = np.random.default_rng(7)
+    y = rng.uniform(-4, 2, 1000)
+    B = _seeded(y, 0.6, seed=11)
+    a = retention(y, _seeded(y, 0.7, seed=12), B)
+    b = retention(y, _seeded(y, 2.0, seed=13), B)
+    d = retention_difference(a, b)
+    assert d['verdict'] == 'a_greater' and d['n_sigma'] > 2
+    assert retention_difference(b, a)['verdict'] == 'b_greater'
+
+
+def test_retention_difference_is_undefined_when_either_side_is():
+    rng = np.random.default_rng(8)
+    y = rng.uniform(-4, 2, 600)
+    good = retention(y, _seeded(y, 0.8, seed=14), _seeded(y, 0.5, seed=15))
+    bad = retention(y, _seeded(y, 0.8, seed=16),
+                    np.stack([np.full_like(y, y.mean()) for _ in range(5)]))
+    assert retention_difference(good, bad)['verdict'] == 'undefined'
 
 
 def test_regression_metrics_rejects_shape_mismatch():

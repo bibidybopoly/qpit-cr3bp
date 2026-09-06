@@ -8,11 +8,24 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
 import constants as C                            # noqa: E402
 
 from features import (jacobi_constant, assert_no_leakage, build_features,
-                      Standardizer, MU_EARTH_MOON, FEATURE_ALLOWLIST)
+                      Standardizer, MU_EARTH_MOON, FEATURE_ALLOWLIST,
+                      assert_feature_set, assert_sheet_energy,
+                      FEATURE_SET_W11, FEATURE_SET_W15)
 
 # L2 halo #29 -- the project's target orbit, C recorded as 3.060334.
 HALO29 = np.array(C.HALO29_STATE)
 HALO29_C = C.HALO29_C
+
+
+def _toy(n=60, levels=(0, 1)):
+    """States plus a SHEET energy column: three values, constant within
+    energy_id, as the Week 10 archive stores it."""
+    rng = np.random.default_rng(0)
+    states = rng.normal(size=(n, 6))
+    fid = np.array([levels[i % len(levels)] for i in range(n)])
+    eid = np.arange(n) % 3
+    sheet_C = np.array([3.029398, 3.064703, 3.130607])[eid]
+    return states, sheet_C, fid, eid
 
 
 def test_jacobi_matches_halo29():
@@ -96,6 +109,118 @@ def test_build_features_rejects_unknown_level():
     raise AssertionError("unknown family level accepted")
 
 
+def test_build_features_reduced_drops_the_onehot():
+    states, Csheet, fid, _ = _toy()
+    X, names, mask = build_features(states, Csheet, fid, [0, 1],
+                                    include_family=False)
+    assert tuple(names) == FEATURE_SET_W15
+    assert X.shape == (60, 7)
+    assert mask.shape == (7,) and mask.all(), \
+        "every column is continuous once the one-hot is gone, so all scale"
+
+
+def test_build_features_default_still_gives_the_week11_layout():
+    """`include_family` defaults to True, so every pre-Week-15 call site must
+    produce exactly what it did before or its model changed underneath it."""
+    states, Csheet, fid, _ = _toy()
+    X, names, mask = build_features(states, Csheet, fid, [0, 1])
+    assert tuple(names) == FEATURE_SET_W11
+    assert X.shape == (60, 9)
+    assert mask.tolist() == [True] * 7 + [False, False]
+
+
+def test_reduced_and_full_agree_on_the_shared_columns():
+    states, Csheet, fid, _ = _toy()
+    Xf, _, _ = build_features(states, Csheet, fid, [0, 1])
+    Xr, _, _ = build_features(states, Csheet, fid, [0, 1], include_family=False)
+    assert np.array_equal(Xf[:, :7], Xr), \
+        "dropping the one-hot must not disturb the columns before it"
+
+
+def test_family_levels_still_validated_when_the_onehot_is_dropped():
+    states, Csheet, fid, _ = _toy()
+    try:
+        build_features(states, Csheet, fid, [0], include_family=False)
+    except ValueError as e:
+        assert 'absent from family_levels' in str(e)
+        return
+    raise AssertionError("unseen family level accepted")
+
+
+def test_reduced_set_has_no_dead_column_on_a_single_family():
+    """The consequence of the layout stability pinned above, and the reason
+    Week 15 drops the one-hot.  Train on one family and `family_1` is constant
+    zero: zero gradient, weights stuck at initialisation, and at test time both
+    columns flip.  The reduced set has no such column."""
+    states, Csheet, fid, _ = _toy(levels=(0,))
+    X, names, _ = build_features(states, Csheet, fid, [0, 1])
+    assert 'family_1' in [n for i, n in enumerate(names) if X[:, i].std() == 0]
+    Xr, names_r, _ = build_features(states, Csheet, fid, [0, 1],
+                                    include_family=False)
+    assert not [n for i, n in enumerate(names_r) if Xr[:, i].std() == 0]
+
+
+def test_reduced_set_passes_the_leakage_check():
+    assert assert_no_leakage(list(FEATURE_SET_W15))
+
+
+def test_assert_feature_set_accepts_and_names_the_difference():
+    states, Csheet, fid, _ = _toy()
+    _, names, _ = build_features(states, Csheet, fid, [0, 1],
+                                 include_family=False)
+    assert assert_feature_set(names, FEATURE_SET_W15) is True
+    try:
+        assert_feature_set(names, FEATURE_SET_W11)
+    except ValueError as e:
+        assert 'family_0' in str(e) and 'missing' in str(e)
+        return
+    raise AssertionError("mismatched feature set accepted")
+
+
+def test_assert_feature_set_is_order_sensitive():
+    """Same columns permuted is a different model, and a caller that reorders
+    would otherwise pass."""
+    try:
+        assert_feature_set(['y', 'x', 'z', 'vx', 'vy', 'vz', 'C'],
+                           FEATURE_SET_W15)
+    except ValueError:
+        return
+    raise AssertionError("permuted feature order accepted")
+
+
+def test_assert_sheet_energy_accepts_the_stored_sheet_column():
+    _, Csheet, _, eid = _toy()
+    assert assert_sheet_energy(Csheet, eid) is True
+
+
+def test_assert_sheet_energy_rejects_the_per_state_column():
+    """The audit's condition.  Per-state Jacobi scores R2 = +0.7976 alone
+    against -0.0001 for the sheet column, because the unreprojected offset is
+    proportional to the target.  Feeding it manufactures the shortcut."""
+    _, Csheet, _, eid = _toy()
+    rng = np.random.default_rng(1)
+    per_state = Csheet + rng.normal(0, 1e-3, size=Csheet.shape)
+    try:
+        assert_sheet_energy(per_state, eid)
+    except ValueError as e:
+        assert 'not constant within energy_id' in str(e)
+        return
+    raise AssertionError("per-state energy column accepted")
+
+
+def test_assert_sheet_energy_catches_a_single_perturbed_row():
+    """Constancy within energy_id, not a distinct-value count: one bad row in
+    one sheet is enough, and a count-based proxy would miss it."""
+    _, Csheet, _, eid = _toy()
+    bad = Csheet.copy()
+    bad[np.where(eid == 1)[0][0]] += 1e-9
+    try:
+        assert_sheet_energy(bad, eid)
+    except ValueError:
+        return
+    raise AssertionError("single perturbed row accepted")
+
+
 def test_standardizer_fits_on_train_only():
     rng = np.random.default_rng(2)
     tr = rng.normal(size=(200, 3))
@@ -120,6 +245,28 @@ def test_standardizer_survives_constant_column():
     Z = Standardizer().fit_transform(X)
     assert np.all(np.isfinite(Z))
     assert np.allclose(Z[:, 0], 0.0)
+
+
+def test_standardizer_scales_all_seven_reduced_columns():
+    """The reduced `scale_mask` is all True, unlike the Week 11 one."""
+    states, Csheet, fid, _ = _toy()
+    X, _, mask = build_features(states, Csheet, fid, [0, 1],
+                                include_family=False)
+    Z = Standardizer(mask).fit_transform(X)
+    assert np.allclose(Z.mean(axis=0), 0.0, atol=1e-12)
+    assert np.allclose(Z.std(axis=0), 1.0, atol=1e-12)
+
+
+def test_standardizer_survives_a_constant_energy_column():
+    """Distinct from `test_standardizer_survives_constant_column`: that one
+    calls Standardizer directly with no mask.  This routes the all-True reduced
+    mask from `build_features` through a single-sheet energy column, which is
+    what a per-cell fit would see."""
+    states, Csheet, fid, _ = _toy()
+    X, _, mask = build_features(states, np.full_like(Csheet, 3.064703), fid,
+                                [0, 1], include_family=False)
+    Z = Standardizer(mask).fit_transform(X)
+    assert np.isfinite(Z).all()
 
 
 if __name__ == '__main__':

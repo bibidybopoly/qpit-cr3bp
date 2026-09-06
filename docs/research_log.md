@@ -1497,3 +1497,101 @@
 **Next session:**
 
 - Week 15, cross-family transfer, with only 2 families in the archive
+
+
+
+## 2026-09-06
+
+**Worked on:**
+
+- Week 15, the last research week: cross-family and cross-energy transfer
+- P15.x pre-registration, `leave_one_level_out`, the reduced feature set, eight fits
+- Start-of-week items 4, 5, 6
+
+
+
+**Progress:**
+
+- P15.x drafted and locked 09-05, before any fit
+- Six predictions, five gates, one feature set across all eight fits
+- P15.4 cut before lock, numbering preserved so P15.5 and P15.6 keep their identifiers
+- `nearest_point_overlap` declared not applicable to a level holdout: with the full key set the overlap is zero by construction, without it the binning compares parameterisation coordinates across families
+- Harder reason found later: `alpha_found`/`theta_found` are absent from the shipped archive entirely, so it could never have run as documented
+
+- `leave_one_level_out` in `src/splits.py`, four masks plus achieved-count metadata
+- `frac_test` is a fraction of the HELD-OUT LEVEL, not the dataset, or the control has no training stock
+- Val is carved from the training pool only; early stopping on held-out-level rows would pick the epoch that best fits the regime the test set exists to measure
+- Group atomicity asserted upfront, seed-independently, not inferred from a split
+- Measured why: `groups_disjoint` catches a straddler on every seed when the straddle involves the held-out level, but a group straddling two OTHER levels passed 12/12 on the third fold while being live on the other two
+- `_assert_partition` and `groups_disjoint` generalised to any key count so `excluded` is covered by the same checks
+- 42 tests, mutation 27/27 with 3 verified equivalent under the atomicity guard
+
+- Family one-hot dropped, `build_features(..., include_family=False)`, `FEATURE_SET_W15` seven columns
+- `assert_feature_set` added because `include_family` defaults True and a fit that forgets it gets nine columns silently
+- `assert_sheet_energy` added: the energy column must be constant within `energy_id`, which is the condition, not a distinct-value count
+- 24 tests in `test_features.py`, 39 in `test_metrics.py`
+
+- G15.1 PASS, zero straddling groups on either key
+- G15.2 PASS, `energy_id` is monotone in C, so holding out 1 really is interpolation
+- G15.4 PASS, far-field test n 569-923 against the 500 floor
+- G15.5: KS(train,test) 0.019-0.029 on every fold. I had written that a level holdout would show a large KS by construction. It does not, and that is better than predicted — the folds are not confounded by target-distribution shift
+- Far-field count 8908, matching Week 13's MI window exactly
+
+- B0 on the reduced set: 0.5863 all held-out, 0.5912 measured, against 0.6269 and 0.6280
+- So the family one-hot was carrying ~0.04 of R2, about 6% of the total. That is the §1.2 free measurement
+
+- Transfer does not degrade, it DIVERGES. T1 predicts -113 to +78 on a target spanning -3.81 to 2.00
+- RMSE ratios transfer/control on identical rows: T1 14.12, T2 8.04, T3 2.64, T4 1.18, T5 5.67
+- 69% of T1 rows wrong by over 3 decades; trimming the worst 1% leaves R2 at -420, so it is most of the data
+- Controls at 1.19-1.43 against B0 at 1.06-1.34, so sample size is excluded
+
+- RETENTION IS VOID and it was knowable in advance. Specified as a ratio of R2 on far-field-only rows, and within-window R2 is negative by construction — Week 12 recorded -0.887 far, restricted range, not a bug
+- All five controls returned -0.87 to -2.03, squarely in that range
+- The denominator guard is the only reason it surfaced as a refusal: T1 would have printed (-602.58)/(-2.03) = 297
+- My design error, not a discovery, and logged as one
+
+- P15.1, P15.5 void. P15.2, P15.3 void as locked, both directions survive under post-hoc RMSE ratio
+- The readout initially printed P15.2 and P15.3 as FALSIFIED. A prediction whose metric could not be computed is VOID; the bug ran in the flattering direction and is fixed
+
+- Feature-substitution probe, 5 seeds: T1 rides on `x`, 65% +/- 23%, argmax stable 5/5
+- T5's single-seed `C` attribution at 73% is FALSIFIED: over 5 seeds `C` recovers 15% +/- 96 points and the argmax moves between `C` and `x`
+- The two-training-levels account is withdrawn and the deflationary reading of P15.3 that rested on it is retracted
+- T3 has no dominant direction either, nothing above 21%, argmax across three features
+- T4 null control refused to report, excess 0.197 decades below the 0.30 floor, which is the probe working
+- Family transfer fails through one identifiable direction, energy transfer diffusely. Observation, not explanation
+
+- `week11_m1_r2` = 0.6576 is the R2 of the seed-averaged prediction of Week 11's THREE seeds, all held-out rows
+- 0.632 at log line 1188 is the mean of those same three per-seed values, 0.6324
+- Week 12's five M1 seeds begin with Week 11's three, identical to four decimals, so they are one run extended
+- M1 is delta-independent across all four keys, verified not assumed
+- Split reconstruction verified directly against the stored `test_mask`, `y_test` to 4.4e-16, and `at_floor_test`
+
+- `t_solve_sec` = 2.416 median, 2.594 mean, range 1.882-3.862 across the six cells, continuation, N=31
+- Corrector and tangent account for 92% of wall time; the tangent is 23% of a step and must not be dropped
+- Seconds saved per candidate = S * mean = 0.887 s. The mean, not the median, because rows are 3400 per cell so cells weight equally and this is an expectation
+- t_infer 39.2 us, ratio 1.6e-05, realised speedup 1.5197 against a cap of 1.5198, so the cap is attained to four decimals
+- L1_E0 is the outlier at 3.862 s/member with the only corrector failure and 6 extra calls, consistent with node-count raises as the curve outgrows N=31
+
+- `docs/CUTS_AND_DISPOSITIONS.md` written
+- Six dispositions kept distinct — cut, retired, moot, void, not applicable, falsified — because they read differently to a reviewer
+- Four of five falsifications are mechanisms that failed while their observations held. Worth a sentence in Discussion
+
+
+
+**Stuck on / questions:**
+
+- Week 12's 0.6288 +/- 0.0214 does not reproduce from the archive, which gives 0.6280 +/- 0.0226
+- M2b reproduces exactly from the same file, so it is not the row population, the R2 convention, or float32
+- Inside the 0.02 verification tolerance, unexplained at the fourth digit. Points at the stored M1 predictions not being the run that produced the logged pair
+
+- `vx` substitution makes T3 substantially WORSE, -107% +/- 9%, consistently across seeds. No account, and not offering one
+
+- §1 of the results uses pooled RMSE, the probe uses mean of per-seed. They agree except on T5, 7.226 against 5.433. Recompute §1 under mean-of-per-seed on both sides before writing; the orderings do not move
+
+- Handoff Limitations lists `n_below_floor`, but `make_windows` reports zero measured rows below floor on this archive. Drop or restate
+
+
+
+**Next session:**
+
+- Then writing
