@@ -40,8 +40,8 @@ of the data rather than a tail.
 | id | disposition | why |
 |----|-------------|-----|
 | P15.1 | **VOID** | Compares two raw R² that are both far below zero (−602, −130). An ordering between two failures is not the ceiling comparison this predicted. |
-| P15.2 | **VOID as locked; direction survives post-hoc** | Retention uncomputable. Under RMSE ratio, T2 (8.04) beats T1 (14.12): training on the information-rich family transfers better, as predicted. |
-| P15.3 | **VOID as locked; direction survives post-hoc** | Same. T4 (1.18) beats T3 (2.64) and T5 (5.67): interpolation over extrapolation, as predicted. See §3 for a deflationary reading. |
+| P15.2 | **VOID as locked; UNRESOLVED post-hoc** | Retention uncomputable. The direction is not established under a metric-robustness sweep — see §2a. Do not report it as surviving. |
+| P15.3 | **VOID as locked; direction survives post-hoc, robustly** | T4 beats both extrapolation folds under all six metrics tested and 96–100% of seed combinations. §2a. |
 | P15.4 | CUT before lock | Recorded in `W15_PREREG.md` §4. |
 | P15.5 | **VOID** | Predicted near-field R² inside the −0.133 band; got −598. Strictly outside, but produced by a model emitting hundred-decade predictions everywhere. "The near field is vacuous" cannot be concluded from a diverged model. |
 | P15.6 | VOID on discovery | `gap` is an interval index, not a width; no per-row gap width in the archive. Recorded before the fits ran. |
@@ -62,6 +62,70 @@ number: T1 would otherwise have printed retention = (−602.58)/(−2.03) = 297.
 pre-registered *question* is answerable. Every sentence written from §1 must say
 "the pre-registered direction survives under a post-hoc metric," never "the
 prediction was confirmed."
+
+---
+
+## 2a. Metric robustness — the post-hoc choice IS load-bearing
+
+Retention is void, so the reported comparison is post-hoc. The risk is not that
+it is post-hoc but that a metric was *selected* from candidates and the one
+reproducing the pre-registered direction was kept. `notebooks/metric_robustness.py`
+tests that directly: six metrics, direction normalised to a common goodness, and
+every ordering evaluated over all 5 × 5 seed combinations rather than a point
+estimate.
+
+| metric | P15.2 (T2 > T1) | 5×5 | P15.3 vs T3 | 5×5 | P15.3 vs T5 | 5×5 |
+|--------|-----------------|-----|-------------|-----|-------------|-----|
+| RMSE ratio | holds | 96% | holds | 100% | holds | 96% |
+| MAE ratio | holds | 88% | holds | 100% | holds | 96% |
+| median &#124;err&#124; ratio | holds | 68% | holds | 96% | holds | 96% |
+| within factor 3 | **FAILS** | 56% | holds | 100% | holds | 100% |
+| within factor 10 | holds | 68% | holds | 100% | holds | 100% |
+| within factor 100 | holds | 68% | holds | 100% | holds | 100% |
+
+**P15.3 survives everything.** Six of six metrics, 96–100% of seed
+combinations. Interpolation beating extrapolation is not an artefact of the
+metric.
+
+**P15.2 does not, and is downgraded to UNRESOLVED.** It flips under
+within-factor-3, and the goodness values there are 0.096 against 0.094 — a tie.
+The seed-combination fractions order themselves by how tail-sensitive the metric
+is: RMSE 96%, MAE 88%, median and the three within-factor metrics 56–68%. T1
+predicts out to −113 and T2 only to −19, so the metrics that separate them most
+strongly are the ones most moved by a handful of extreme predictions. Under the
+**pre-established Week 12 arbiter** — fraction within a factor of N in physical
+km, which no target-space choice can move — the direction sits at 56–68%, which
+is not a direction.
+
+So: "training on the information-rich family transfers better" is **not
+established by Week 15** and must not be written as surviving. The script's own
+instruction applies — report the disagreement, do not pick the metric that
+agrees with the pre-registration.
+
+---
+
+## 2b. The arbiter table, and one positive result inside it
+
+Fraction of far-field rows predicted within a factor of N, physical km, mean of
+per-seed, transfer over its matched-n control on identical rows.
+
+| fold | ×3 transfer | ×3 control | ×10 transfer | ×10 control | ×100 transfer | ×100 control |
+|------|------------|-----------|-------------|------------|--------------|-------------|
+| T1 | 0.025 | 0.259 | 0.053 | 0.418 | 0.104 | 0.846 |
+| T2 | 0.037 | 0.394 | 0.083 | 0.538 | 0.171 | 0.920 |
+| T3 | 0.226 | 0.423 | 0.395 | 0.554 | 0.641 | 0.872 |
+| **T4** | 0.380 | 0.460 | **0.603** | **0.592** | 0.867 | 0.915 |
+| T5 | 0.096 | 0.391 | 0.236 | 0.526 | 0.526 | 0.881 |
+
+**T4 matches its control at the factor-of-10 level** — 0.603 against 0.592,
+goodness 1.019. Holding out the middle energy and testing on it costs
+essentially nothing at that tolerance. That is the one place in Week 15 where
+transfer works, and it belongs in the paper as prominently as the failures: the
+model interpolates across energy and does not extrapolate across anything.
+
+The controls also restate the Week 12 finding in physical units: even in
+distribution, a far-field prediction lands within a factor of 10 about half the
+time. M1 resolves which decade, not where inside it.
 
 ---
 
@@ -137,8 +201,18 @@ deployable whatever its in-distribution accuracy.
 
 This strengthens the two-sided central claim rather than complicating it. Week
 13 established that supervised learning screens usefully in distribution and
-cannot seed a solver. Week 15 adds that the screening itself does not survive a
-change of family or energy, and fails loudly enough to be detectable.
+cannot seed a solver. Week 15 adds that the screening does not survive a change
+of family, or an extrapolation in energy, and fails loudly enough to be
+detectable.
+
+**With one exception that should not be buried.** Energy *interpolation* is
+nearly free: T4 matches its matched-n control at the factor-of-10 level (0.603
+against 0.592). The claim is therefore not "transfer fails" but "the model
+interpolates and does not extrapolate" — which is both more accurate and more
+useful to anyone deciding where such a screen could be deployed.
+
+**What Week 15 does NOT establish.** The family asymmetry. P15.2's direction is
+unresolved under the arbiter (§2a) and must not be stated.
 
 ---
 
@@ -161,13 +235,19 @@ change of family or energy, and fails loudly enough to be detectable.
 
 ---
 
-## 6. Open — your ruling
+## 6. Rulings, settled 2026-09-06
 
-1. **Does the RMSE ratio become the reported comparison?** I have seen the
-   results, so this choice is not mine to make cleanly.
-2. **P15.5's disposition.** Void is my reading; falsified is defensible on the
-   letter of it.
-3. **`W15_PREREG.md` to `docs/`**, committed now, with both dates logged — drafted
-   and locked before any fit, committed after.
-4. Start-of-week items 5 and 6 (`t_solve_sec`, logging the formal cuts) remain
-   outstanding.
+1. **The arbiter is `factor_table` in physical km** — the pre-established Week 12
+   arbiter, not a metric chosen this week. RMSE ratio is reported beside it as
+   the compact summary, and where they disagree the arbiter wins. It disagrees
+   on P15.2, which is why P15.2 is unresolved.
+2. **P15.5 is falsified, not void.** The metric computed and came back wrong.
+   The earlier void call was mine and ran in the flattering direction.
+3. **P15.2 downgraded to unresolved** on the robustness sweep — a ruling the
+   evidence forced rather than one that was open.
+4. `W15_PREREG.md`, `W15_RESULTS.md` and `CUTS_AND_DISPOSITIONS.md` committed to
+   `docs/`; log entry appended; tracker at v2_4. Items 5 and 6 closed.
+
+**Still open:** the §1 table uses pooled RMSE where the probe and §2a use mean
+of per-seed. Recompute §1 on both sides before writing. Fold orderings do not
+move; the numbers do.

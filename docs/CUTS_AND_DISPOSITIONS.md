@@ -68,21 +68,86 @@ A falsification is a result, not a cut, and belongs in Results. It is listed in
 |------|-----|
 | **`nearest_point_overlap` on a level holdout** | With the full key set `(family_id, energy_id)` the train and test key sets are disjoint by construction on the held-out axis, so overlap is exactly zero and vacuous. Dropping the held-out key makes it non-zero but bins `alpha_found`/`theta_found` across two families, and those are parameterisation coordinates on a torus — the same (α, θ) bin on an L1 and an L2 sheet is not the same place in phase space. **Separately and harder: the recovered coordinates it documents as its inputs are absent from the shipped archive entirely.** Consequence: cross-level folds carry no measured residual-overlap bound |
 
-## 5. UNDISPOSED — decide before writing
+## 5. Disposed 2026-09-06 — six of seven closed
 
-These were deferred to "ride with the regeneration decision". **Regeneration is
-cut, so they ride nowhere.** They are permanent properties of the shipped
-dataset.
+These were deferred to "ride with the regeneration decision". Regeneration is
+cut, so they rode nowhere and were settled directly.
 
-| item | why it still matters |
-|------|---------------------|
-| **`mknb10.py` missing** | **The one with teeth.** If `qpit_dataset_w10.npz` cannot be regenerated from a script, that is an artifact-reproducibility problem for arXiv and JEI, and it will not get easier during the writing phase |
-| **The four `*_KNOWN_DEFECT` pins** | Each pins a known-wrong value. Disclose individually or explain the pin |
-| **Notebook constant copies** | Constants duplicated rather than read from `constants.py`; a drift check exists only where the archive carries the value itself |
-| **The `normal_directions` fix** | Residual already slated for Limitations, but the fix itself has no disposition |
-| **`first_orbit` / `amplitude_direction`** | Now in `halo_families.ipynb`, `floquet_analysis.ipynb` **and** `time_solve.py`, and the two notebook copies have already drifted (`T / 2.0` against `T / 2`). Belongs in `src/orbits.py`. Same fix `metrics.dead_zone` records for nb11 §9 |
-| **`week11_m1_r2` residual** | 0.6576 is settled — the R² of Week 11's seed-averaged three-seed prediction. But Week 12's reported 0.6288 ± 0.0214 does not reproduce from the archive, which gives 0.6280 ± 0.0226. M2b reproduces exactly from the same file; only M1 does not. Inside the 0.02 verification tolerance, unexplained at the fourth digit |
-| **Censored-miss base rate** | 16 L2 / 7 L1 with no base rate to read it against. One line of code |
+| item | disposition |
+|------|-------------|
+| **`mknb10.py` missing** | **CLOSED — the item was overstated.** The dataset IS regenerable: `nb10_dataset_generation.ipynb` builds it end to end and the sampling seed is recorded (`default_rng(20260810)`, created once before the family loop, so draw order is fixed). What is missing is a *builder*, a convention gap, not a reproducibility one. `notebooks/verify_w10.py` added: every column derivable from other stored columns re-derives exactly under the shipped `sampling.py`, `group_id` included. All checks pass. The ten columns needing a full rebuild are named, not passed over. **Reproducer's trap recorded:** `build()` resumes from `../data/families/{tag}.npz` when present, so a from-scratch run must clear that directory or it silently reuses cached families |
+| **The `*_KNOWN_DEFECT` pins** | **CLOSED — there is ONE, not four.** `tests/test_sampling.py:143`, `test_normal_directions_still_carry_a_theta_tangent_component_KNOWN_DEFECT`. The handoff's count of four is wrong; either three were removed after 2026-08-30 or the number was approximate. The pin is correct, well-documented, and states its own fix and why it was not applied. **Keep it.** It asserts the residual is present (`resid.max() > 1e-3`) and that the tangents are non-orthogonal (`|cos| > 0.1`), so it fails loudly the day someone fixes `normal_directions`, which is what a pin is for |
+| **Notebook constant copies** | **CLOSED — not reproducible.** Neither `halo_families.ipynb` nor `floquet_analysis.ipynb` contains a literal copy of any `constants.py` value |
+| **The `normal_directions` fix** | **DISCLOSE, DO NOT FIX — and my first closure of this was wrong.** See §5a |
+| **`first_orbit` / `amplitude_direction`** | **CLOSED.** Promoted to `src/orbits.py` with `halo_family()`, deferred `cr3bp_3d` import to match `compute_halo_family`. `time_solve.py` imports them; both notebooks still need their local copies replaced |
+| **`week11_m1_r2` residual** | **CLOSED as a disposition, not an explanation.** The reported pair is internally inconsistent: 0.6288 matches the test-mean convention (archive gives 0.6280), 0.0214 matches a fixed-reference convention (archive gives 0.0215 with mean 0.6451). No single convention produces both, and `score_C` is ruled out (identical to `log10(max(d_km, floor))` to 4.4e-16). **Quote 0.6280 ± 0.0226**, which is what a reviewer rerunning the artifact gets |
+| **Censored-miss base rate** | **CLOSED, and it survives.** Held-out censored rows are L1 = 277, L2 = 262, so p(L2) = 0.4861. Against that, 16/23 gives expected 11.18 ± 2.40, z = +2.01, one-sided binomial P = 0.035 (≈0.07 two-sided). Marginal at n = 23, and it runs **opposite** to the far-field per-cell MI where L2 carried about twice L1. Limitations, as a stated tension rather than a finding |
+
+### 5a. The `normal_directions` defect, reopened
+
+**I closed this on a pooled median and the structure was in the line below it.**
+I reported "median ratio 0.9999 … and 0.9919–1.0000 across the six cells" and
+read the spread as noise. It is not noise. It is one cell.
+
+`normal_directions` projects the two surface tangents out sequentially. Removing
+the `t_al` component re-introduces a `t_th` component because the tangents are
+not orthogonal, so only the tangent projected out **last** is actually cleared.
+The pin at `tests/test_sampling.py:143` documents this, names the fix
+(orthonormalise before projecting), and says it was not applied because it
+changes what `mknb10` generates and so had to ride with the regeneration
+decision — which is cut.
+
+Measured on the archive, per cell, normal-direction rows only, ratio of measured
+to drawn distance:
+
+| cell | n | median | p05 | p01 | min |
+|------|---|--------|-----|-----|-----|
+| L1_E0 | 1985 | 0.9995 | 0.9878 | 0.9635 | 0.8159 |
+| L1_E1 | 1960 | 0.9998 | 0.9956 | 0.9888 | 0.9053 |
+| L1_E2 | 1973 | 1.0000 | 0.9998 | 0.9995 | 0.9918 |
+| **L2_E0** | **1922** | **0.9919** | **0.8510** | **0.6934** | **0.2522** |
+| L2_E1 | 1984 | 0.9999 | 0.9986 | 0.9951 | 0.9179 |
+| L2_E2 | 1945 | 1.0000 | 0.9995 | 0.9984 | 0.9906 |
+
+L2_E0 is 0.81% short in the median and 14.9% at p05. **The pin documents 0.9%
+and 14%, measured independently on `data/families/L2_E0.npz`.** It is right to
+two significant figures and my pooled number was wrong. Within L2_E0 the effect
+is uniform across gap index (0.991–0.995), so it is a property of that cell's
+tangent geometry rather than of particular gaps. One sample landed 75% short.
+
+The pin's second claim also holds: **`random_dir` no longer cleanly separates
+the two direction regimes.** 4.8% of L2_E0's normal-direction rows fall below
+the random-direction median, against 0.0–0.1% in every other cell.
+
+**Bearing on results.** Labels are unaffected — `d_km` comes from
+`surface_distance`, measured after the fact. The distortion is in coverage: the
+realised distance distribution in L2_E0 is pulled toward the surface relative to
+the log-uniform draw. Its far-field share is 0.4895, the lowest of the six
+(range 0.4895–0.5094), which is a 2% relative deficit and the direction the
+defect predicts. L2_E0 sits in the **test** set of T1 and T3, so both carry
+slightly fewer far-field rows than intended. Too small to move an RMSE ratio of
+2.64 or 14.12, and it must still be stated.
+
+**Disposition: disclose, do not fix.** The fix requires regeneration.
+
+### Corrections this pass forced on earlier documents
+
+- **The archive does not carry a per-state Jacobi.** `label_and_pack` writes
+  `jacobi=np.full(n, C)`, so `jacobi` and `C` are byte-identical. The dangerous
+  column in the `features.py` audit is the *recomputed* per-state Jacobi, which
+  is not in the archive at all. `assert_sheet_energy` still earns its place, but
+  the comment in `mknb15b.py` claiming the archive carries both is wrong
+- **My closure of the `normal_directions` item was retracted the same day it
+  was written**, on evidence I had already printed. A pooled median over six
+  cells hid a defect confined to one. Same failure as the single-seed probe
+  earlier in Week 15: a summary statistic standing in for a distribution
+- **`alpha_found`/`theta_found` are computed and then discarded**, not
+  never-produced. `label_and_pack` returns them; cell 13's `savez_compressed`
+  writes an explicit key allowlist and they are not on it. `nearest_point_overlap`
+  documents exactly those columns as its inputs, so the dataset's writer and that
+  instrument disagree about what the archive contains. Two names on that list
+  would have fixed it, and regeneration is cut — an independent second reason
+  the instrument is not applicable in Week 15
 
 ## 6. Falsified — these are RESULTS, not cuts
 
