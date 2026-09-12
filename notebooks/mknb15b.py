@@ -42,11 +42,17 @@ states, C, d_km, at_floor = z['states'], z['C'], z['d_km'], z['at_floor']
 FLOOR_KM = float(z['floor_km'])
 assert abs(FLOOR_KM - constants.FLOOR_KM) < 1e-12
 
-# THE ENERGY COLUMN.  The archive carries both `C` (sheet) and `jacobi`
-# (per-state).  Per-state scores R2 = +0.7976 alone against -0.0001 for the
+# THE ENERGY COLUMN.  CORRECTED 2026-09-11: the archive does NOT carry a
+# per-state Jacobi.  `sampling.label_and_pack` writes `jacobi=np.full(n, C)`,
+# so the archive's `jacobi` and `C` columns are byte-identical (verified on
+# data/qpit_dataset_w10.npz).  The dangerous column is the RECOMPUTED
+# per-state Jacobi -- `features.jacobi_constant(states)` -- which is not in
+# the archive at all.  It scores R2 = +0.7976 alone against -0.0001 for the
 # sheet column, because the offsets were never reprojected, so a state's own
 # energy differs from its sheet's by an amount proportional to the target.
 # Feeding it manufactures the shortcut and it would look like a triumph.
+# `assert_sheet_energy` still earns its place: it is what makes the column
+# handed to build_features the sheet energy rather than something recomputed.
 assert_sheet_energy(C, eid)
 print('sheet energy confirmed: C is constant within energy_id')
 
@@ -85,8 +91,39 @@ print('features:', names, X_all.shape)
 # run reporting a converged R2" is entry 2 on the silent-success list.  Running
 # the bare default here would reproduce that failure across all eight fits and
 # every one would return a plausible number.
-CFG = MLPConfig(max_epochs=3000, min_epochs=150, patience=50)
-E_A, E_B, E_C = 0, 1, 2    # energy_id, monotone in C -- confirmed by G15.2
+#
+# CORRECTED 2026-09-11.  "3000/150/50" is (max_epochs, patience, lr_patience),
+# as written in mknb11.py:613 and mknb12.py:114.  This line previously read
+#     MLPConfig(max_epochs=3000, min_epochs=150, patience=50)
+# which put 150 into min_epochs and 50 into patience, leaving lr_patience at
+# its default 25.  So the archived Week 15 run used patience=50 (a third of
+# the frozen configuration) and lr_patience=25 (half).  That is visible in
+# data/wk15/history_wk15.json: epochs_run - best_epoch is exactly 51 on all
+# forty fits, i.e. patience + 1 at patience=50; at 150 it would be 151.
+# Every fold and its matched-n control ran the same schedule, so the WITHIN-
+# Week-15 comparisons are unaffected; the cross-week comparison against the
+# Week 11/12 archive is not.  See docs/W15_RESULTS.md section 1.
+# max_epochs 3000 -> 8000, 2026-09-11.  With patience corrected to 150 the
+# budget became the binding constraint instead: 13 of the 40 fits in the
+# 3000-epoch run reported hit_max_epochs, concentrated in T1 (4/5 seeds) and
+# T2 (4/5), with epochs_run - best_epoch as low as 1 -- still improving when
+# the budget ended.  By this project's own rule those are LOWER BOUNDS, not
+# fits, and P15.2 is computed entirely from T1 and T2.  The fits that did
+# converge needed at most best_epoch 2509, so 8000 is roughly 3x headroom over
+# the largest converged run and early stopping should end most fits well
+# before it.  If hit_max_epochs still fires at 8000, that is itself the
+# finding -- do not raise it again without saying so in the log.
+CFG = MLPConfig(max_epochs=8000, patience=150, lr_patience=50)
+
+# G15.2 IS A GATE, SO ASSERT IT RATHER THAN RECORDING THAT IT PASSED.  The
+# interpolation/extrapolation reading of P15.3 is void unless energy_id is
+# monotone in C; the comment used to carry that as a claim.  It holds on this
+# archive (3.0294, 3.0647, 3.1306) and costs one line to keep holding.
+_C_by_eid = [float(np.unique(C[eid == e])[0]) for e in (0, 1, 2)]
+assert _C_by_eid == sorted(_C_by_eid), (
+    f"G15.2 FAILS: energy_id is not monotone in C ({_C_by_eid}); E_a/E_b/E_c "
+    "below would mislabel which fold is interpolation")
+E_A, E_B, E_C = 0, 1, 2    # energy_id, monotone in C -- asserted above
 
 FOLDS = {}
 for tag, key, lv in [('T1', fid, 1), ('T2', fid, 0),
@@ -163,10 +200,17 @@ for name, (tr, va) in RUNS.items():
             print(f"  !! {name} seed {s} HIT MAX EPOCHS at {h['epochs_run']} "
                   f"-- the fit is budget-limited, not converged")
     PRED[name] = np.stack(ps)
+    # `config` IS RECORDED.  It was left out of this allowlist, and that is
+    # why a mis-specified CFG survived a whole week: the archive recorded what
+    # the fits DID and not what they were ASKED to do, so the only trace of
+    # patience=50 was an epochs_run - best_epoch gap of 51 that nobody had a
+    # reason to look at.  train_mlp already puts asdict(cfg) in the history;
+    # it costs a few hundred bytes to keep it.
     HIST[name] = [{k: h[k] for k in ('val_r2', 'is_mean_predictor',
                                      'hit_max_epochs', 'early_stopped',
                                      'epochs_run', 'best_epoch',
-                                     'best_val_loss')} for h in hs]
+                                     'best_val_loss', 'config',
+                                     'seed')} for h in hs]
     print(f"{name}: {len(SEEDS)} seeds in {time.time()-t0:.0f}s  "
           f"val_r2={np.mean([h['val_r2'] for h in hs]):.4f}")
 
@@ -340,9 +384,24 @@ def main():
         with open(NB) as f:
             existing = json.load(f)
         if sources(existing) != sources(fresh):
-            print(f"REFUSING to overwrite {NB}: cell source has diverged.")
-            print(f"Fold the hand-edit back into {__file__} and re-run.")
-            return 1
+            if '--force' not in sys.argv:
+                print(f"REFUSING to overwrite {NB}: cell source has diverged.")
+                print(f"Fold the hand-edit back into {__file__} and re-run, "
+                      f"or pass --force to discard the notebook's version.")
+                return 1
+            print(f"--force: overwriting a DIVERGED {os.path.basename(NB)}")
+        else:
+            # IDENTICAL SOURCE -> DO NOT WRITE.  Rewriting is a no-op on the
+            # source and strips every executed output, which is a silent loss
+            # of work: the exact failure mknb11.py's guard was built after
+            # (33 cells / 23 outputs, 2026-08-16).  Both this builder and
+            # mknb15b.py used to fall through to the write here.
+            n_out = sum(len(c.get('outputs', [])) for c in existing['cells']
+                        if c['cell_type'] == 'code')
+            print(f"{os.path.basename(NB)}: already up to date "
+                  f"({len(fresh['cells'])} cells, {n_out} executed outputs "
+                  f"preserved) -- not rewriting")
+            return 0
     with open(NB, 'w') as f:
         json.dump(fresh, f, indent=1)
     print(f"wrote {NB} ({len(fresh['cells'])} cells)")

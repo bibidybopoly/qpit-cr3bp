@@ -264,9 +264,24 @@ def main():
         with open(NB) as f:
             existing = json.load(f)
         if sources(existing) != sources(fresh):
-            print(f"REFUSING to overwrite {NB}: cell source has diverged.\n"
-                  f"Fold the hand-edit back into {__file__} and re-run.")
-            return 1
+            if '--force' not in sys.argv:
+                print(f"REFUSING to overwrite {NB}: cell source has diverged.")
+                print(f"Fold the hand-edit back into {__file__} and re-run, "
+                      f"or pass --force to discard the notebook's version.")
+                return 1
+            print(f"--force: overwriting a DIVERGED {os.path.basename(NB)}")
+        else:
+            # IDENTICAL SOURCE -> DO NOT WRITE.  Rewriting is a no-op on the
+            # source and strips every executed output, which is a silent loss
+            # of work: the exact failure mknb11.py's guard was built after
+            # (33 cells / 23 outputs, 2026-08-16).  Both this builder and
+            # mknb15b.py used to fall through to the write here.
+            n_out = sum(len(c.get('outputs', [])) for c in existing['cells']
+                        if c['cell_type'] == 'code')
+            print(f"{os.path.basename(NB)}: already up to date "
+                  f"({len(fresh['cells'])} cells, {n_out} executed outputs "
+                  f"preserved) -- not rewriting")
+            return 0
     with open(NB, 'w') as f:
         json.dump(fresh, f, indent=1)
     print(f"wrote {NB} ({len(fresh['cells'])} cells)")

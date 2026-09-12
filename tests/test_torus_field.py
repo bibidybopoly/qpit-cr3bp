@@ -38,7 +38,7 @@ from qpit import evaluate_curve                                  # noqa: E402
 from torus_field import _gap_distance, label_states, surface_distance  # noqa: E402
 from torus_probe import curve_local_distance, probe_curve        # noqa: E402
 
-from constants import LU             # one definition, project-wide
+from constants import LU, INTERP_FLOOR_KM   # one definition, project-wide
 FAM = os.path.join(os.path.dirname(__file__), '..', 'data', 'famC_dense.npz')
 PROBE_CAL = 1.1433          # measured on unstable-bundle displacements
 
@@ -234,9 +234,54 @@ def test_label_floor_is_the_interpolation_bound():
     mem = _fam()
     rng = np.random.default_rng(6)
     X = evaluate_curve(mem[30]['U0'], rng.uniform(0, 2 * np.pi, 8))
-    lab = label_states(X, mem, floor_km=1e-4)
+    lab = label_states(X, mem, floor_km=INTERP_FLOOR_KM)
     assert np.all(lab['at_floor'])
-    assert np.allclose(lab['log_d_km'], -4.0)     # floored, not -inf
+    assert np.allclose(lab['log_d_km'], np.log10(INTERP_FLOOR_KM))
+
+
+def test_label_states_defaults_to_the_interpolation_floor_not_FLOOR_KM():
+    """THE TWO FLOORS ARE DIFFERENT NUMBERS AND MUST NOT BE SWAPPED.
+
+    `INTERP_FLOOR_KM` (1e-4) is the surface's interpolation error at the
+    12.3 km design gap and falls as g^2 under densification.  `FLOOR_KM`
+    (1.55e-4) is the measured reproducibility floor and does not fall at all.
+    `label_states` clamps at the first; `sampling.label_and_pack`, which
+    produced the shipped dataset, clamps at the second.  They are close
+    enough (1.55x apart) that a swap would look like a rounding difference
+    rather than a wrong label, which is exactly why this is pinned.
+    """
+    import constants as C
+    import inspect
+    assert C.INTERP_FLOOR_KM != C.FLOOR_KM
+    assert abs(C.INTERP_FLOOR_KM - interp_error_km(12.3)) < 1e-6
+    default = inspect.signature(label_states).parameters['floor_km'].default
+    assert default == C.INTERP_FLOOR_KM
+
+    mem = _fam()
+    rng = np.random.default_rng(6)
+    X = evaluate_curve(mem[30]['U0'], rng.uniform(0, 2 * np.pi, 8))
+    assert np.allclose(label_states(X, mem)['log_d_km'],
+                       np.log10(C.INTERP_FLOOR_KM))
+
+
+def test_pointwise_gap_distance_is_the_diagonal_of_the_full_one():
+    """`_gap_distance_at` replaced `np.diagonal(_gap_distance(...))` in the
+    golden-section refinement.  The claim is EXACTNESS, not approximation --
+    same arithmetic on the same values -- so this asserts equality at rtol=0
+    and would fail on any reordering that changed the result by an ulp.
+    """
+    from torus_field import _gap_distance_at
+    mem = _fam()
+    rng = np.random.default_rng(11)
+    P = 40
+    th = rng.uniform(0, 2 * np.pi, P)
+    X = evaluate_curve(mem[12]['U0'], th) + 1e-6 * rng.standard_normal((P, 6))
+    U_a, U_b = mem[12]['U0'], mem[13]['U0']
+    D, al = _gap_distance(X, U_a, U_b, th)
+    d1, a1 = _gap_distance_at(X, U_a, U_b, th)
+    assert np.allclose(np.diagonal(D), d1, rtol=0, atol=0)
+    assert np.allclose(np.diagonal(al), a1, rtol=0, atol=0)
+    assert d1.shape == (P,) and a1.shape == (P,)
 
 
 if __name__ == '__main__':

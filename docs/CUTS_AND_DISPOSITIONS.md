@@ -9,7 +9,7 @@ failed", and "the instrument does not fit this question" is invisible unless it
 is written down, and all three are defensible while silence is not.
 
 **Dates.** Where a date is marked `[log]` it needs to come from
-`research_log.md` or the mentor-session record; I have the decision but not the
+`research_log.md`; I have the decision but not the
 day. Do not invent them.
 
 ---
@@ -37,9 +37,9 @@ A falsification is a result, not a cut, and belongs in Results. It is listed in
 
 | item | decided by | when | reason |
 |------|-----------|------|--------|
-| **Week 14** | Pierce + Dr. Lang | 2026-08-30 | Compress to one remaining research week; freed time went to the writing block |
-| **Week 16** | Pierce + Dr. Lang | 2026-08-30 | Same |
-| **The regeneration batch** | Pierce + Dr. Lang | 2026-08-30 — **first logged mentor session** | Settled by Pierce's own audit: dropping L2_E2 entirely moves near-field bias 6.2% and flips no verdict. The 562 rows below their error bound go in Limitations |
+| **Week 14** | Pierce | 2026-08-30 | Compress to one remaining research week; freed time went to the writing block |
+| **Week 16** | Pierce | 2026-08-30 | Same |
+| **The regeneration batch** | Pierce | 2026-08-30 | Settled by my own audit: dropping L2_E2 entirely moves near-field bias 6.2% and flips no verdict. The 562 rows below their error bound go in Limitations |
 | **Heteroscedastic σ(x)** | Pierce | `[log]` | Refinement of a likelihood that lost |
 | **Interval censoring** | Pierce | `[log]` | Same |
 | **P15.4** (family asymmetry > energy asymmetry) | Pierce | 2026-09-05, **before P15.x locked** | Already carried by P15.2 and P15.3 read together; most likely of the six to return unresolved at these test sizes. Numbering preserved so P15.5 and P15.6 keep their identifiers |
@@ -59,14 +59,14 @@ A falsification is a result, not a cut, and belongs in Results. It is listed in
 | **P15.6** (Risk 19 gap confound) | 2026-09-05, **before the fits ran** | `gap` is an integer interval index 0–62, not a width. The archive carries no per-row gap width — only scalar `target_gap_km` = 12.3 and per-cell `family_max_gap_km`. Recovering one means returning to the torus surfaces, which is new compute |
 | **Retention** — Week 15's pre-registered primary metric | 2026-09-06, after the fits | Specified as a ratio of R² on far-field-only rows. Within-window R² is negative by construction — Week 12 measured −0.887 far, restricted range, not a bug — so both numerator and denominator are negative for a *well-fitting* model. All five controls returned −0.87 to −2.03. **Knowable in advance from the Week 13 handoff; this was a design error, not a discovery** |
 | **P15.1** | 2026-09-06 | Compares two raw R² that are both far below zero (−602, −130). An ordering between two failures is not the ceiling comparison it predicted |
-| **P15.5** | 2026-09-06 | Predicted near-field R² inside the −0.133 band, got −598. Strictly outside, but produced by a model emitting hundred-decade predictions everywhere. "The near field is vacuous" cannot be concluded from a diverged model |
-| **P15.2, P15.3** — *as locked* | 2026-09-06 | Retention uncomputable. Both **directions survive under post-hoc RMSE ratio** and must be reported with that wording, never as confirmations |
+| ~~**P15.5**~~ | ~~2026-09-06~~ | **MOVED TO §6 — falsified, not void** (ruling 2 of `W15_RESULTS.md` §6, 2026-09-06; this row survived the ruling and was removed 2026-09-11). The metric computed and returned −598 against a predicted −0.133 band. A prediction that is tested and fails is a result |
+| **P15.2, P15.3** — *as locked* | 2026-09-06 | Retention uncomputable. **REVISED 2026-09-12 on the corrected fits.** The published note said both directions "survive under post-hoc RMSE ratio"; that is now exactly backwards for one of them. **P15.2** holds under all six metrics with the arbiter at 80% of seed combinations — upgraded from unresolved. **P15.3** now FAILS under RMSE ratio (32%) and MAE (40%) against T3 and survives only on the arbiter (88 / 76 / 64%), where ruling 1 gives it the tie-break — downgraded from "survives everything". Neither direction was stable to a training-schedule change, which is the finding. Both remain post-hoc and must be worded as such |
 
 ## 4. Not applicable — instrument does not fit
 
 | item | why |
 |------|-----|
-| **`nearest_point_overlap` on a level holdout** | With the full key set `(family_id, energy_id)` the train and test key sets are disjoint by construction on the held-out axis, so overlap is exactly zero and vacuous. Dropping the held-out key makes it non-zero but bins `alpha_found`/`theta_found` across two families, and those are parameterisation coordinates on a torus — the same (α, θ) bin on an L1 and an L2 sheet is not the same place in phase space. **Separately and harder: the recovered coordinates it documents as its inputs are absent from the shipped archive entirely.** Consequence: cross-level folds carry no measured residual-overlap bound |
+| **`nearest_point_overlap` on a level holdout** | With the full key set `(family_id, energy_id)` the train and test key sets are disjoint by construction on the held-out axis, so overlap is exactly zero and vacuous. Dropping the held-out key makes it non-zero but bins `alpha_found`/`theta_found` across two families, and those are parameterization coordinates on a torus — the same (α, θ) bin on an L1 and an L2 sheet is not the same place in phase space. **Separately and harder: the recovered coordinates it documents as its inputs are absent from the shipped archive entirely.** Consequence: cross-level folds carry no measured residual-overlap bound |
 
 ## 5. Disposed 2026-09-06 — six of seven closed
 
@@ -76,7 +76,7 @@ cut, so they rode nowhere and were settled directly.
 | item | disposition |
 |------|-------------|
 | **`mknb10.py` missing** | **CLOSED — the item was overstated.** The dataset IS regenerable: `nb10_dataset_generation.ipynb` builds it end to end and the sampling seed is recorded (`default_rng(20260810)`, created once before the family loop, so draw order is fixed). What is missing is a *builder*, a convention gap, not a reproducibility one. `notebooks/verify_w10.py` added: every column derivable from other stored columns re-derives exactly under the shipped `sampling.py`, `group_id` included. All checks pass. The ten columns needing a full rebuild are named, not passed over. **Reproducer's trap recorded:** `build()` resumes from `../data/families/{tag}.npz` when present, so a from-scratch run must clear that directory or it silently reuses cached families |
-| **The `*_KNOWN_DEFECT` pins** | **CLOSED — there is ONE, not four.** `tests/test_sampling.py:143`, `test_normal_directions_still_carry_a_theta_tangent_component_KNOWN_DEFECT`. The handoff's count of four is wrong; either three were removed after 2026-08-30 or the number was approximate. The pin is correct, well-documented, and states its own fix and why it was not applied. **Keep it.** It asserts the residual is present (`resid.max() > 1e-3`) and that the tangents are non-orthogonal (`|cos| > 0.1`), so it fails loudly the day someone fixes `normal_directions`, which is what a pin is for |
+| **The `*_KNOWN_DEFECT` pins** | **REOPENED AND RE-CLOSED 2026-09-11 — there are FOUR, and the handoff was right.** My "there is ONE" was a grep artifact: I searched `KNOWN_DEFECT`, the convention also admits `KNOWN_GAP`, and the fourth pin was not named to the convention at all. The four: (1) `test_sampling.py` `..._normal_directions_still_carry_a_theta_tangent_component_KNOWN_DEFECT`; (2) `test_labeling_observables.py` `..._dev_ratio_threshold_is_hard_coded_not_calibrated_KNOWN_GAP`; (3) `test_slow_paths.py` `..._a_short_window_raises_instead_of_reporting_a_reason_KNOWN_GAP`; (4) `test_labeling_observables.py` `test_default_safety_factor_halves_the_documented_bound` — a pin by content, carrying "DOCUMENTATION MISMATCH, pinned" in its own docstring, with no suffix, so nothing could enumerate it. **Renamed to `..._KNOWN_DEFECT`.** All four are correct, all four state their own fix, **keep all four.** The register's own lesson applies to the register: a count taken from a grep is only as good as its pattern |
 | **Notebook constant copies** | **CLOSED — not reproducible.** Neither `halo_families.ipynb` nor `floquet_analysis.ipynb` contains a literal copy of any `constants.py` value |
 | **The `normal_directions` fix** | **DISCLOSE, DO NOT FIX — and my first closure of this was wrong.** See §5a |
 | **`first_orbit` / `amplitude_direction`** | **CLOSED.** Promoted to `src/orbits.py` with `halo_family()`, deferred `cr3bp_3d` import to match `compute_halo_family`. `time_solve.py` imports them; both notebooks still need their local copies replaced |
@@ -121,7 +121,7 @@ the random-direction median, against 0.0–0.1% in every other cell.
 
 **Bearing on results.** Labels are unaffected — `d_km` comes from
 `surface_distance`, measured after the fact. The distortion is in coverage: the
-realised distance distribution in L2_E0 is pulled toward the surface relative to
+realized distance distribution in L2_E0 is pulled toward the surface relative to
 the log-uniform draw. Its far-field share is 0.4895, the lowest of the six
 (range 0.4895–0.5094), which is a 2% relative deficit and the direction the
 defect predicts. L2_E0 sits in the **test** set of T1 and T3, so both carry
@@ -159,6 +159,10 @@ as a confirmation.
 - **P13.4** (Week 13) — predicted S > 0.40, measured 0.342 ± 0.008
 - **The `kl_entropy` failure mechanism** — observation held, mechanism did not
 - **The T5 `C` attribution** (Week 15, 2026-09-06) — a one-seed probe put `C` at 73% and a two-training-levels account was written from it. Over five seeds `C` recovers 15% ± 96 points and the dominant direction moves between `C` and `x`. **Withdrawn, and the deflationary reading of P15.3 that rested on it is retracted**
+- **The family one-hot's R² share** (Week 15, withdrawn 2026-09-12) — "the family one-hot was carrying ≈ 0.04 of R², about 6% of the total" was the early-stopping schedule in its entirety. On the corrected fits B0 on seven features scores 0.6294 / 0.6366 against the archive's 0.6269 / 0.6280: the one-hot is worth −0.0025 / −0.0086, nothing, slightly negative. **The §1.2 free measurement returns a null**
+- **T4's factor-of-10 match to its control** (Week 15, withdrawn 2026-09-12) — "the one place in Week 15 where transfer works" was 0.603 against 0.592 and is now 0.482 against 0.639. It should not have been written even on the old fits: it was 15 of 25 seed pairs, a coin flip by the standard §2a uses to reject a direction, and ×10 was the only one of seven factors at which T4 exceeded its control. A crossing point in a monotone row, selected. On the corrected fits T4 is 0 of 25 at all seven factors. **"Energy interpolation is nearly free" and "the model interpolates and does not extrapolate" both fall with it**
+- **T1's `x` attribution** (Week 15, withdrawn 2026-09-12) — reported as stable on 5/5 seeds and called "the one attributable fold"; on the corrected fits it is 4/5 and fails the probe's own all-seeds rule. `x` remains the leading candidate (67% recovered, nothing else above 7%, matching the rigid-covariate-shift signature at |z| = 45.3) and the probe does not establish it. **No fold in Week 15 is mechanistically attributable**, and the probe lost its negative control at the same time: T4's excess rose from 0.197 to 1.294 decades, so nothing now sits below the 0.30-decade floor
+- **P15.5** (Week 15, ruled 2026-09-06, filed here 2026-09-11) — predicted near-field transfer R² inside the in-distribution −0.133 band; measured −598. The metric computed and came back wrong. It sat under §3 *Void* until this pass; the earlier void call ran in the flattering direction and the ruling that corrected it is in `W15_RESULTS.md` §6. What a diverged model cannot support is the *positive* reading, "the near field is vacuous" — which is why P15.5 does not become evidence for its own converse
 
 Four of the five are mechanisms that failed while their observations held. That
 pattern is worth one sentence in Discussion.
@@ -194,3 +198,21 @@ The handoff's Limitations list, updated:
 - T5's failure magnitude varies across seeds by as much as its own size
 - `t_solve_sec` measured on halos offset from the dataset energies by up to
   0.09% of C — immaterial for timing, stated for completeness
+- **All eight Week 15 fits ran `patience=50` / `lr_patience=25`, not the frozen
+  configuration's 150 / 50** (found 2026-09-11). A kwarg mis-mapping in
+  `mknb15b.py`: "3000/150/50" is `(max_epochs, patience, lr_patience)`, and the
+  call put 150 into `min_epochs` and 50 into `patience`. Confirmed against the
+  archive — `epochs_run − best_epoch` is exactly 51 on all forty fits. Uniform
+  across every fold and control. **I then predicted that this left within-week
+  comparisons unaffected, and the re-run of 2026-09-12 falsified that.** A
+  uniform schedule is not an equally converged one: the folds gained different
+  amounts of validation R² when the budget was fixed (T1 +0.083, T2 +0.069,
+  T4 +0.060 against C_energy +0.025) and the ratios moved with them — T1 14.12 →
+  73.13, T4 1.18 → 2.19, T3 2.64 → 1.85. Two published conclusions and one
+  mechanism did not survive (§6), and both pre-registered directions changed
+  robustness status. **Week 15's verdicts are sensitive to the training schedule
+  at the level of the verdicts**, which is a finding about the instrument.
+  Correcting `patience` then made `max_epochs=3000` bind on 13 of 40 fits, so
+  the budget went to 8000; 1 of 40 is budget-limited now (T5 seed 1). It was all
+  invisible because the saved history dropped `config`; the builder now records
+  it, and the same mis-mapping was found and fixed in `probe_divergence.py`

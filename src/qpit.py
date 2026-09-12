@@ -17,6 +17,8 @@ import numpy as np
 
 from scipy.integrate import solve_ivp as _solve_ivp   # noqa: E402
 
+from constants import LU                           # noqa: E402
+
 from cr3bp_3d import (                                # noqa: E402
     MU_EARTH_MOON,
     cr3bp_rhs_3d as _cr3bp_rhs_3d,
@@ -92,8 +94,8 @@ def wavenumbers(N: int) -> np.ndarray:
 def rho_from_normalised(rho_norm: float) -> float:
     """Convert a rotation number expressed as a fraction of 2*pi to radians.
 
-    Your Floquet tables use the normalised form (period doubling at 0.5).
-    Every published GMOS formula uses radians.  Convert here, once.
+    This project's Floquet tables use the normalised form (period doubling at
+    0.5).  Every published GMOS formula uses radians.  Convert here, once.
     """
     return 2.0 * np.pi * rho_norm
 
@@ -564,8 +566,9 @@ def jacobi_gradient(x, mu):
     accelerations in cr3bp_rhs_3d, which is what makes the self-test below
     convention-proof.
 
-    SELF-TEST (tests/test_qpit_jacobi.py): dC/dx . f(x) == 0 to machine
-    precision at a random state, using YOUR vector field.  That identity
+    SELF-TEST (tests/test_qpit_constraints.py): dC/dx . f(x) == 0 to machine
+    precision at a random state, using this module's own vector field.  That
+    identity
     holds only if this gradient and cr3bp_rhs_3d agree on mu placement, on
     the sign of the Coriolis block, and on the omega convention, so one
     assertion covers every convention question at once.  It is insensitive
@@ -1270,7 +1273,7 @@ def continue_torus_family(U0, T, rho, mu, pin='rho', n_steps=40,
               f"   dA/ds {tdiag['dA_ds']:+.3e}")
         print(f"{'step':>4} {'N':>3} {'A [km]':>10} {'C':>14} {'rho/2pi':>11} "
               f"{'|F|inf':>10} {'tail':>9} {'its':>4} {'ds':>9}")
-        print(f"{0:4d} {m['N']:3d} {m['amplitude']*384400:10.2f} {m['C']:14.9f} "
+        print(f"{0:4d} {m['N']:3d} {m['amplitude']*LU:10.2f} {m['C']:14.9f} "
               f"{m['rho']/(2*np.pi):11.8f} {m['res_inf']:10.2e} "
               f"{m['tail']:9.1e} {0:4d} {0.0:9.2e}")
 
@@ -1330,7 +1333,7 @@ def continue_torus_family(U0, T, rho, mu, pin='rho', n_steps=40,
 
         if verbose:
             m = members[-1]
-            print(f"{step:4d} {m['N']:3d} {m['amplitude']*384400:10.2f} "
+            print(f"{step:4d} {m['N']:3d} {m['amplitude']*LU:10.2f} "
                   f"{m['C']:14.9f} {m['rho']/(2*np.pi):11.8f} "
                   f"{m['res_inf']:10.2e} {m['tail']:9.1e} "
                   f"{m['n_iter']:4d} {ds:9.2e}")
@@ -1367,8 +1370,18 @@ def torus_bundle(U0, T, rho, mu, which='unstable', n_power=12, DG=None):
     real bundle from one of them means undoing a phase that differs node to
     node.  Iterating DG on a real curve avoids the question entirely: it
     stays real throughout and converges to the dominant real bundle at a rate
-    set by the modulus gap, which here is R_u : 1 = 146 : 1, so 12 iterations
-    leave 1e-26.  For 'stable', iterate the inverse map.
+    set by the modulus gap, which here is R_u : 1 = 146 : 1.  For 'stable',
+    iterate the inverse map.
+
+    WHAT `n_power` DOES AND DOES NOT BUY -- MEASURED, and not what a single
+    dominant eigenvalue would give.  The dominant eigenvalue is N-fold
+    degenerate IN MODULUS (15 eigenvalues at 146.35 on the N=31 test torus),
+    so the 146:1 gap governs convergence to the dominant SUBSPACE, not to a
+    single vector.  `R` therefore keeps oscillating at ~1e-4 no matter how
+    large n_power is; a "12 iterations leave 1e-26" reading of the gap does
+    NOT apply to it.  What the science consumes is the per-node DIRECTIONS,
+    and those are stable to ~5e-7 from n_power 2 to 100 -- which is why a
+    regeneration reproduces, and why the default of 12 is ample.
 
     Returns (V, R) with V of shape (N, 6), unit rows, and R the measured
     growth factor per application -- which should reproduce the radius behind

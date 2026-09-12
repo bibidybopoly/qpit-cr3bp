@@ -36,7 +36,7 @@ import numpy as np
 
 from qpit import evaluate_curve
 
-from constants import LU                     # re-exported: see constants.py
+from constants import LU, INTERP_FLOOR_KM    # re-exported: see constants.py
 
 
 def _gap_distance(X, U_a, U_b, thetas):
@@ -57,6 +57,36 @@ def _gap_distance(X, U_a, U_b, thetas):
     alpha = np.clip(rd / dd[None, :], 0.0, 1.0)
     # ||r - alpha*d||^2, valid for clipped alpha too
     D2 = rr - 2.0 * alpha * rd + alpha ** 2 * dd[None, :]
+    return np.sqrt(np.maximum(D2, 0.0)), alpha
+
+
+def _gap_distance_at(X, U_a, U_b, thetas):
+    """The DIAGONAL of `_gap_distance`, without forming the square matrix.
+
+    Row p of X is evaluated at `thetas[p]` only -- which is all the golden
+    section in `surface_distance` ever wanted, since every query point carries
+    its own bracket.  Returns (d, alpha) both shaped (P,).
+
+    WHY THIS EXISTS.  The refinement used to call `_gap_distance(Xs, ..., t)`
+    with `len(t) == len(Xs)` and take `np.diagonal`, which allocates a
+    (P, P, 6) intermediate to use P of its P**2 entries.  At 2,000 points in
+    one gap that is 385 MB and 1.6 s per golden-section evaluation, and there
+    are 2*n_refine + 1 of them; at 20,000 points in one gap it is 20 GB and
+    fails outright.  It survived on the shipped 67-member family only because
+    66 gaps split the points into batches of a few hundred.  Same arithmetic,
+    same order of operations, O(P) instead of O(P**2).
+    """
+    A = evaluate_curve(U_a, thetas)                   # (P, 6)
+    B = evaluate_curve(U_b, thetas)
+    D_vec = B - A
+    dd = np.maximum(np.einsum('pj,pj->p', D_vec, D_vec), 1e-300)
+
+    R = X - A
+    rr = np.einsum('pj,pj->p', R, R)
+    rd = np.einsum('pj,pj->p', R, D_vec)
+
+    alpha = np.clip(rd / dd, 0.0, 1.0)
+    D2 = rr - 2.0 * alpha * rd + alpha ** 2 * dd
     return np.sqrt(np.maximum(D2, 0.0)), alpha
 
 
@@ -116,8 +146,7 @@ def surface_distance(X, members, n_grid=512, n_refine=48, chunk=512,
         U_a, U_b = members[i]['U0'], members[i + 1]['U0']
         Xs = X[sel]
         def f(t):
-            D, al = _gap_distance(Xs, U_a, U_b, t)
-            return np.diagonal(D).copy(), np.diagonal(al).copy()
+            return _gap_distance_at(Xs, U_a, U_b, t)
         th0 = best['theta'][sel]
         a, b = th0 - dth, th0 + dth
         c, e = b - invphi * (b - a), a + invphi * (b - a)
@@ -150,12 +179,18 @@ def surface_distance(X, members, n_grid=512, n_refine=48, chunk=512,
                 gap=best['gap'])
 
 
-def label_states(X, members, floor_km=1e-4, **kw):
+def label_states(X, members, floor_km=INTERP_FLOOR_KM, **kw):
     """Regression label: log10 distance in km, floored at the surface error.
 
     The floor is the interpolation bound, not machine epsilon.  Below it the
     label is not resolved by the surface and reporting a smaller number
     would be reporting the family's discretisation as physics.
+
+    NOTE THE FLOOR IS `constants.INTERP_FLOOR_KM` (1e-4 km), NOT
+    `constants.FLOOR_KM` (1.55e-4 km).  They are different quantities -- see
+    the note on INTERP_FLOOR_KM.  The shipped Week 10 dataset was labelled by
+    `sampling.label_and_pack`, which clamps at FLOOR_KM; this function is the
+    standalone labeller and clamps at the surface's own interpolation bound.
     """
     out = surface_distance(X, members, **kw)
     d_km = out['d'] * LU

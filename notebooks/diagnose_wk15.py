@@ -82,35 +82,54 @@ def main():
     print("  transfer collapse is a real extrapolation result, not a bug.\n")
 
     # ---- prediction scale, per fit -----------------------------------------
-    print("=== prediction ranges (target spans "
-          f"{y.min():.2f} to {y.max():.2f} in log10 km) ===")
+    #
+    # WHICH ROWS AND WHICH SEEDS -- STATED, because this table used to be
+    # quoted as if it described a fold's held-out behaviour and it does not.
+    # min/p01/p50/p99/max are over EVERY row of the archive (20,400) and all
+    # five seeds, so for a transfer fit they include its own TRAINING rows;
+    # that is the right scope for "where does this fit ever go", and the wrong
+    # scope for "what does T1 predict on the held-out family".  `resid sd` is
+    # on a FIXED reference set -- B0's grouped-split test rows, measured only
+    # -- so the eight fits are comparable to each other; it is not the fold's
+    # own residual sd.  Both are now all-seed; they were seed 0.
+    print("=== prediction ranges "
+          f"(target spans {y.min():.2f} to {y.max():.2f} in log10 km) ===")
+    print("  rows: ALL 20,400 archive rows x 5 seeds (training rows included)")
+    print("  resid sd: on B0's test & measured rows, NOT each fold's own rows")
     print(f"  {'fit':<10}{'min':>10}{'p01':>9}{'p50':>9}{'p99':>9}{'max':>12}"
           f"{'resid sd':>10}")
     for name in sorted(P.files):
         A = P[name].ravel()
-        rs = float(np.std(P[name][0][t & meas] - y[t & meas]))
+        rs = float(np.sqrt(np.mean((P[name][:, t & meas] - y[t & meas]) ** 2)))
         print(f"  {name:<10}{A.min():>10.2f}{np.percentile(A,1):>9.2f}"
               f"{np.percentile(A,50):>9.2f}{np.percentile(A,99):>9.2f}"
               f"{A.max():>12.2f}{rs:>10.2f}")
 
     # ---- where the blow-up lives -------------------------------------------
     print("\n=== transfer folds: is the damage everywhere or in a tail? ===")
+    print("  per-fold rows: that fold's own test & far-field rows.")
+    print("  ALL SEEDS and SEED 0 both shown -- the seed-0 column was once")
+    print("  quoted beside all-seed RMSE in one table, and T5's failure size")
+    print("  varies across seeds by as much as its own mean, so on that fold")
+    print("  the two differ substantially (42.0% seed 0 vs 24.9% all seeds).")
     FOLDS = [('T1', fid, 1), ('T2', fid, 0), ('T3', eid, 0),
              ('T4', eid, 1), ('T5', eid, 2)]
+    print(f"  {'fold':<5}{'n':>6}{'med|err|':>10}{'max|err|':>10}"
+          f"{'>3dex all':>11}{'>3dex s0':>10}{'R2 trim1% s0':>14}")
     for tag, key, lv in FOLDS:
         m, _ = leave_one_level_out(key, lv, gid, frac_test=0.2,
                                    frac_val=0.1, seed=0)
         tf = m['test'] & far
+        res_all = np.abs(P[tag][:, tf] - y[tf][None, :])
         res = np.abs(P[tag][0][tf] - y[tf])
-        wild = res > 3.0                      # >1000x error in km
         # R2 with the worst 1% of rows removed: if it recovers, the collapse is
         # a few divergent points, not a uniformly bad fit.
         keep = res <= np.percentile(res, 99)
         idx = np.flatnonzero(tf)
         trimmed = regression_metrics(y[idx[keep]], P[tag][0][idx[keep]])['r2']
-        print(f"  {tag}: n={int(tf.sum())}  median|err|={np.median(res):.3f}  "
-              f"max|err|={res.max():.1f}  rows>3 dex={int(wild.sum())} "
-              f"({wild.mean():.1%})  R2 trimmed 1% = {trimmed:.3f}")
+        print(f"  {tag:<5}{int(tf.sum()):>6}{np.median(res_all):>10.3f}"
+              f"{res_all.max():>10.1f}{(res_all > 3.0).mean():>11.1%}"
+              f"{(res > 3.0).mean():>10.1%}{trimmed:>14.3f}")
 
     print("\n=== residual sd on the SAME rows, transfer vs its control ===")
     print("  MSE is well defined where a ratio of negative R2 is not.")
@@ -134,7 +153,7 @@ def main():
     # refitting is needed, because the Standardizer is deterministic given the
     # training mask.  If test rows sit at |z| ~ 4 like B0's and the model still
     # diverges, the hypothesis is WRONG and the instability is elsewhere.
-    from features import build_features, Standardizer, FEATURE_SET_W15
+    from features import build_features, Standardizer
     X_all, names, scale_mask = build_features(
         z['states'], z['C'], fid, [0, 1], include_family=False)
 

@@ -38,7 +38,7 @@ A sharpening matters here, because it is easy to wave at KAM theory and assume
 the problem is well posed. KAM's positive-measure guarantee concerns
 **maximal-dimension** tori, which in a three-degree-of-freedom system are
 3-tori. The objects in this project are lower-dimensional, partially hyperbolic
-2-tori living in the centre manifold of a periodic orbit whose monodromy also
+2-tori living in the center manifold of a periodic orbit whose monodromy also
 carries a hyperbolic pair. These are different objects with different measure.
 The positive-measure KAM tori do exist somewhere in the energy manifold; they
 are not what is computed here and not what the labels denote.
@@ -61,19 +61,19 @@ Definition A was set aside early on two grounds. `eps` is arbitrary; and because
 these tori are partially hyperbolic, a point `eps` away along the unstable
 direction is `eps`-close in state space while behaving nothing like the torus, so
 the distance being thresholded is not the quantity that matters. B was adopted
-first: a behavioural test, thresholded against a noise floor measured rather than
+first: a behavioral test, thresholded against a noise floor measured rather than
 chosen.
 
 ---
 
 ## 2. The gap experiment eliminates the naive negative class
 
-**Motivation.** Any labelling scheme of the form "on my computed surfaces,
+**Motivation.** Any labeling scheme of the form "on my computed surfaces,
 positive; nearby and off them, negative" assumes the space between adjacent
-computed tori is empty. At fixed `C` the centre-manifold dynamics reduce to a
+computed tori is empty. At fixed `C` the center-manifold dynamics reduce to a
 two-dimensional area-preserving map whose invariant circles form a Cantor set,
 interleaved with resonant island chains. The gaps should be *mostly full* of tori
-that were simply never computed. Labelling those negative is systematic, not
+that were simply never computed. Labeling those negative is systematic, not
 random, error: the network would be trained to reject exactly the objects it is
 meant to find.
 
@@ -110,7 +110,7 @@ wrong.
 
 ---
 
-## 3. The shadowing bound eliminates behavioural labelling
+## 3. The shadowing bound eliminates behavioral labeling
 
 **The bound.** `stability_index` on the mid-family member (A = 202.5 km) gives
 `nu = 73.178054`, so `R_u = 146.318672`, confirmed two ways in the same cell
@@ -191,7 +191,7 @@ Beyond `d ~ 1.78e-7` the ratio jumps from 1.14 to 160 in a single grid step of
 break was located by a fine sweep and is the origin of the censoring flag.
 
 **B is also uninformative where it remains defined.** Given §2, the interesting
-variation under a binary label lives in exactly two places: off the centre
+variation under a binary label lives in exactly two places: off the center
 manifold, which is nearly trivial to separate, and inside resonance gaps, where
 the distance field goes non-smooth. Both are questions about a distance. Only one
 of them survives being collapsed to a bit.
@@ -215,8 +215,8 @@ convergence test is a mixed 6-D infinity norm.
 (§2). Enumerating members would overestimate by `g/2` and require thousands of
 them. Interpolating instead puts the error at exactly the quantity §2 measured,
 `c*g^2` with `c = 2.6e-3 km / (62.5 km)^2 = 6.656e-7 /km`. The `alpha`
-minimisation is closed-form, since the interpolant is linear in `alpha`, leaving
-only a one-dimensional minimisation over `theta`.
+minimization is closed-form, since the interpolant is linear in `alpha`, leaving
+only a one-dimensional minimization over `theta`.
 
 **Accuracy floor is measured, not assumed.** Re-deriving a torus by a different
 route and asking how far it lands from the surface gives **2–155 mm** (mean 58 mm)
@@ -238,7 +238,7 @@ themselves are the limit, not the spacing.
 | sensitive to `R_u` | yes (fatally) | no |
 
 The last row matters for scope: L1 halos are more unstable than L2, which would
-have been fatal to any behavioural scheme and is now irrelevant, because nothing
+have been fatal to any behavioral scheme and is now irrelevant, because nothing
 integrates forward.
 
 Cross-validated against the probe as an independent measurement across four
@@ -288,7 +288,7 @@ imply otherwise.
 **Honest costs of C.** Regression metrics read less immediately than "94%
 accurate." And the distance field is genuinely non-smooth, because the tori form a
 Cantor set, so `R^2` will look mediocre for reasons that are physics rather than
-modelling failure. That needs framing in the results section rather than apology.
+modeling failure. That needs framing in the results section rather than apology.
 
 ---
 

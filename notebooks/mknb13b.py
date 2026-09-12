@@ -14,7 +14,14 @@ import json
 import os
 import sys
 
-NB_PATH = os.path.join("notebooks", "wk13_triage.ipynb")
+# Resolved against THIS FILE, not the working directory.  With a bare
+# os.path.join("notebooks", ...) the builder only found its own notebook when
+# run from the repo root; run from inside notebooks/ it wrote a NEW
+# notebooks/notebooks/<name>.ipynb instead, which meant the divergence guard
+# below never fired -- the path it checks did not exist, so `--force` was not
+# needed to lose a hand-edit, only a different working directory.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+NB_PATH = os.path.join(_HERE, "wk13_triage.ipynb")
 
 
 def md(text):
@@ -329,6 +336,31 @@ with open(OUT, "w") as fh:
 print("wrote", OUT)
 """),
 
+# WHICH ROWS THE TRIAGE SKIPS -- FOLDED BACK IN FROM THE NOTEBOOK, 2026-09-11.
+#
+# The next two cells were hand-added to wk13_triage.ipynb and were never in
+# this builder, so the notebook carried 10 cells against the builder's 8.  They
+# are not scratch: they produce the 16-of-23 censored-miss figure that the
+# Limitations item in docs/CUTS_AND_DISPOSITIONS.md rests on.  Run from the
+# repo root, this builder would have deleted them silently -- Risk 21 with a
+# live example.
+#
+# Folded back VERBATIM, with no explanatory markdown cell added, because an
+# extra cell is itself a divergence and would force a regeneration that strips
+# the notebook's eight executed outputs.  The explanation belongs here.
+code(r"""
+tau = np.quantile(yhat_M1[0][d_test <= mi.DEAD_ZONE_KM_W12], 0.95)
+cen = censored[test_idx]
+print(f"censored held-out rows kept at 95% recall: "
+      f"{(yhat_M1[0][cen] <= tau).mean():.3f} of {cen.sum()}")
+"""),
+
+code(r"""
+skip = yhat_M1[0] > tau
+print(np.unique(np.asarray(npz["source"])[test_idx][cen & skip], return_counts=True))
+print(np.unique(np.asarray(npz["family"])[test_idx][cen & skip], return_counts=True))
+"""),
+
 ]
 
 
@@ -349,7 +381,6 @@ def main():
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
     nb = build()
-    os.makedirs(os.path.dirname(NB_PATH), exist_ok=True)
     if os.path.exists(NB_PATH) and not args.force:
         with open(NB_PATH) as fh:
             existing = json.load(fh)

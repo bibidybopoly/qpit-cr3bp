@@ -706,7 +706,7 @@
 
 **Progress:**
 
-- Analysed the floquet multipliers of the Halo Families I generated to look for where QPITs could be near
+- Analyzed the floquet multipliers of the Halo Families I generated to look for where QPITs could be near
 
 - The two best candidates:
 - L1 orbit 16 — C = 3.077, ρ/2π = 0.272
@@ -991,7 +991,7 @@
 - The gap is full of tori
 - 80/80 candidates interpolated between computed members converged to genuine tori, with fitted exponent 2.003 — the signature of pure second-order interpolation error
 - i.e. a smooth continuous surface with linear interpolation as the only source of error
-- So the positive class is not 17 thin sheets; it is a nearly solid 3-D region with exponentially thin holes at resonances, and the naive labelling was wrong essentially everywhere
+- So the positive class is not 17 thin sheets; it is a nearly solid 3-D region with exponentially thin holes at resonances, and the naive labeling was wrong essentially everywhere
 
 - The probe score is not a distance
 - It scales as gap² so it reports local family curvature and my discretisation choice
@@ -1080,7 +1080,7 @@
 - Second failure: 
 - As the family approaches 1/4 the extrapolation-error budget collapses from 75 km to 0, so non-convergence cannot be separated from a poor seed
 - The family curvature that signals the resonance is the same thing that destroys linear extrapolation 
-- Risk 18 realised
+- Risk 18 realized
 
 - Secondary Question 2 reframed from "ML accuracy degrades near resonances" to characterisation: 
 - Detectability threshold in q (invisible at q = 7, strong at q = 4), κA² breakdown at 90% of predicted resonance amplitude, power-law repulsion d ~ A^−2.57, Fourier resolution growth 31 → 41 → 51
@@ -1117,7 +1117,7 @@
 - The first run of `nb11_first_regressor.ipynb` produced an anomaly: 
 - The B1 shortcut baseline scored R² = +0.816 where it was predicted to score near zero
 - M1, with strictly more information, scored worse at 0.567
-- This is not a modelling failure, it is a signal that a feature carries the answer
+- This is not a modeling failure, it is a signal that a feature carries the answer
 
 - Diagnosed with `nb11_diag_shortcut.py` (ablations, grouped split, same learner throughout)
 - My stated hypothesis was that the stored `C` column encoded the offset
@@ -1167,7 +1167,7 @@
 
 - The scorecard as first written printed "P3c falsified means Risk 19 was right and the Cantor-set framing stands" 
 - That inference is wrong and must not reach the paper
-- The labeller measures distance to a densified interpolated continuum at ~12.3 km spacing
+- The labeler measures distance to a densified interpolated continuum at ~12.3 km spacing
 - So, it cannot resolve the gaps between tori 
 - That structure is not present in the target as generated 
 - Risk 19 stays untested; this experiment has no power over it
@@ -1287,7 +1287,7 @@
 - Batching it for after Week 12 closes, together with the `normal_directions` fix and an `mknb10.py` written first, so I invalidate those results once instead of three times
 - Payoff when I do: 562 -> 0 measured rows below their bound
 - Every row still under the new bound is already `at_floor`, so its target is clamped and the error cannot propagate
-- All six families would then have a labelling limit set by the reproducibility floor rather than by family spacing, which is what the whole densification argument was aiming at
+- All six families would then have a labeling limit set by the reproducibility floor rather than by family spacing, which is what the whole densification argument was aiming at
 - Rule I am taking from this: when a probe fails with `max_iter`, raise `itmax` before concluding the family has a gap
 - The default 15 is not enough at low rho.
 
@@ -1368,7 +1368,7 @@
 - The gate fired `regenerate, grid refinement required` on d_near = -0.1875
 - That is the registered rule satisfied, but on different evidence than it was written for
 - I wrote it for "no gain, therefore data-limited", and what happened is that both levers actively hurt
-- Stronger evidence, but it does not prove modelling is exhausted, only that my mechanism was wrong
+- Stronger evidence, but it does not prove modeling is exhausted, only that my mechanism was wrong
 - Want to settle that before committing compute to a regeneration
 
 
@@ -1515,7 +1515,7 @@
 - P15.x drafted and locked 09-05, before any fit
 - Six predictions, five gates, one feature set across all eight fits
 - P15.4 cut before lock, numbering preserved so P15.5 and P15.6 keep their identifiers
-- `nearest_point_overlap` declared not applicable to a level holdout: with the full key set the overlap is zero by construction, without it the binning compares parameterisation coordinates across families
+- `nearest_point_overlap` declared not applicable to a level holdout: with the full key set the overlap is zero by construction, without it the binning compares parameterization coordinates across families
 - Harder reason found later: `alpha_found`/`theta_found` are absent from the shipped archive entirely, so it could never have run as documented
 
 - `leave_one_level_out` in `src/splits.py`, four masks plus achieved-count metadata
@@ -1569,7 +1569,7 @@
 - `t_solve_sec` = 2.416 median, 2.594 mean, range 1.882-3.862 across the six cells, continuation, N=31
 - Corrector and tangent account for 92% of wall time; the tangent is 23% of a step and must not be dropped
 - Seconds saved per candidate = S * mean = 0.887 s. The mean, not the median, because rows are 3400 per cell so cells weight equally and this is an expectation
-- t_infer 39.2 us, ratio 1.6e-05, realised speedup 1.5197 against a cap of 1.5198, so the cap is attained to four decimals
+- t_infer 39.2 us, ratio 1.6e-05, realized speedup 1.5197 against a cap of 1.5198, so the cap is attained to four decimals
 - L1_E0 is the outlier at 3.862 s/member with the only corrector failure and 6 extra calls, consistent with node-count raises as the curve outgrows N=31
 
 - `docs/CUTS_AND_DISPOSITIONS.md` written
@@ -1595,3 +1595,184 @@
 **Next session:**
 
 - Then writing
+
+## 2026-09-11
+
+**Worked on:**
+
+- Full audit of src/, tests/, notebooks/, docs/ and the repo root, with fixes
+
+**Progress:**
+
+- `mknb15b.py` epoch budget was mis-specified: `MLPConfig(max_epochs=3000,
+  min_epochs=150, patience=50)` where "3000/150/50" means
+  (max_epochs, patience, lr_patience). All eight Week 15 fits therefore ran
+  patience=50 and lr_patience=25 against the frozen 150/50
+- Confirmed from the archive rather than from the source: `epochs_run -
+  best_epoch` is exactly 51 on all forty fits in `history_wk15.json`, which is
+  patience+1 at patience=50; at 150 it would be 151
+- Uniform across all eight fits, so every transfer-over-control ratio, the
+  arbiter table and P15.3 are unaffected. The §1.2 free measurement -- the
+  family one-hot's ~0.04 of R2 -- is confounded and is marked as such. Settling
+  it is one B0 re-run, not eight
+- Root cause of the invisibility: `mknb15b.py` dropped `config` from the history
+  allowlist, so the archive recorded what the fits did and not what they were
+  asked to do. Fixed; `config` and `seed` are now saved
+
+- `week11_m1_r2` = 0.6576 SETTLED, to ten digits: it is the R2 of the
+  seed-averaged prediction of Week 11's THREE seeds on all held-out rows
+  (0.6575564946 recomputed, 0.6575564947 stored). Agrees with
+  `notebooks/check_wk11_r2.py` and with line 1563 of this log
+- Worth recording because W15_PREREG §7 item 4 proposes settling it from
+  `predictions_wk12.npz` M1 (5 seeds), and that route cannot produce it: the
+  five-seed archive gives 0.6288 mean-of-per-seed, 0.6630 ensembled, 0.6518 max
+  on measured rows, and 0.6269 / 0.6523 / 0.6465 on all rows. The number comes
+  from the Week 11 file, not the Week 12 one
+- Split reconstruction verified exactly on the way: `grouped_split(group_id,
+  0.2, 0.1, seed=0)` reproduces the stored `test_mask` bit for bit, and M1's
+  predictions are bit-identical across all four delta keys, which is the
+  "M1 is delta-independent -- verify rather than assume" item
+
+- The shipped labels reproduce from the family archives. `verify_w10.py` lists
+  `d_km` among the columns only a full rebuild can check; it is checkable
+  against `data/families/*.npz`, and 1,500 sampled rows across all six cells
+  agree to a median 1e-11 relative, max 4e-10 km absolute on measured rows
+  (0.4 micrometres, against a 0.155 m floor). Added to `verify_w10.py`
+
+- `torus_field`'s golden-section refinement built a (P, P, 6) array to use its
+  diagonal -- 385 MB and 1.6 s per evaluation at 2,000 points in one gap, and
+  ~20 GB at 20,000. It survived only because 66 gaps split the points into
+  batches of a few hundred. Replaced with a pointwise version, bit-identical
+  output, 3x faster at P=800
+- `mknb13.py` / `mknb13b.py` resolved their notebook path against the working
+  directory, so run from inside `notebooks/` they wrote a new
+  `notebooks/notebooks/*.ipynb` and the divergence guard never fired
+- And `wk13_triage.ipynb` HAD diverged: two hand-added cells, absent from the
+  builder, producing the 16-of-23 censored-miss figure the Limitations item
+  rests on. Folded back verbatim -- no extra markdown cell, because that is
+  itself a divergence and would force a regeneration that strips the eight
+  executed outputs. Builder and notebook now agree
+- `mknb15.py` / `mknb15b.py` rewrote the notebook when the sources were
+  IDENTICAL, stripping executed outputs -- the exact failure mknb11's guard was
+  built after. Fixed, and `--force` added so a deliberate overwrite is still
+  possible
+- `requirements.txt` was UTF-16LE with a BOM, so `pip install -r
+  requirements.txt` -- the command in the README -- failed before reading a
+  package. Converted to UTF-8, 118 packages preserved exactly
+
+- W15_RESULTS §1 recomputed under mean-of-per-seed on both sides, closing the
+  open item. No fold ordering moves; T5 moves most, 5.67 -> 4.27
+- Two more §1 corrections the recompute turned up. `rows > 3 dex` was seed 0
+  while every other column in that table pooled five seeds (69.3/51.9/26.1/
+  1.6/42.0 seed 0, against 85.1/74.3/22.3/3.6/24.9 all-seed). And T1's
+  "predicts between -113.55 and +78.01 with a residual sd of 12.37" used the
+  wrong rows twice: the range is over all 20,400 archive rows including T1's
+  own training rows, and the 12.37 is seed 0 on B0's test rows. On T1's own
+  held-out far-field rows it is -105.86 to +76.32 with sd 16.69. Conclusion
+  unchanged
+- P15.5 still read VOID in W15_RESULTS §2 and in the CUTS §3 void table, after
+  §6 ruling 2 had already corrected it to FALSIFIED and noted the void call ran
+  in the flattering direction. Both fixed; P15.5 now sits in CUTS §6 with the
+  other falsifications
+- Pin count: there are FOUR, not one. My earlier count grepped `KNOWN_DEFECT`
+  and missed both `KNOWN_GAP` pins and a fourth that was a pin by content with
+  no suffix at all. Renamed the fourth to the convention
+
+**Stuck on / questions:**
+
+- `nb15_gates.ipynb` has DIVERGED from `mknb15.py`, and the builder is the
+  newer side: it uses `mi.make_windows` while the notebook still carries the
+  exploratory fallback-import version with a TODO. Regenerating costs the
+  notebook's five executed outputs, so it needs a deliberate `--force` and a
+  re-execution rather than an audit decision. The builder's claims check out --
+  far n = 8908 either way, upper bound 100.194 km against data stopping at
+  99.683 km
+- `nb15_fits.ipynb` does not exist; `mknb15b.py` builds it and the Week 15
+  numbers were produced some other way. Worth knowing which, before the
+  write-up cites a notebook that was never run
+
+**Next session:**
+
+- Re-run B0 under the corrected config to settle the one-hot share
+- Then writing
+
+
+## 2026-09-12
+
+**Worked on:**
+
+- Re-ran Week 15 under the corrected epoch budget; rewrote W15_RESULTS and the
+  disposition register against the new fits
+
+**Progress:**
+
+- Two corrected runs. patience 50 -> 150 / lr_patience 25 -> 50 left 13 of 40
+  fits hitting max_epochs=3000; raising it to 8000 leaves 1 of 40 (T5 seed 1,
+  best_epoch 7978). Every already-converged seed reproduced its best_epoch
+  exactly across the two runs, so the pipeline is deterministic and the numbers
+  are schedule-independent rather than merely self-consistent
+- The transfer folds want far more training than the in-distribution ones:
+  best_epoch up to 7258 on T3 and 7128 on T2 against 1980 for B0 and 1238 for
+  C_family. Worth a sentence in the write-up on its own
+
+- MY 09-11 CALL WAS WRONG AND THE RE-RUN FALSIFIED IT. I reasoned that because
+  every fold and its control ran the same schedule, within-week comparisons
+  would be unaffected and only the cross-week comparison would move. A uniform
+  schedule is not an equally converged one. The folds gained different amounts
+  of validation R2 (T1 +0.083, T2 +0.069, T4 +0.060 against C_energy +0.025)
+  and the ratios moved with them: T1 14.12 -> 73.13, T2 8.04 -> 9.25, T3
+  2.64 -> 1.85, T4 1.18 -> 2.19, T5 5.67 -> 4.22
+
+- THE FAMILY ONE-HOT CARRIES NOTHING. B0 on seven features: 0.6294 all rows,
+  0.6366 measured, against the archive's 0.6269 / 0.6280. The one-hot is worth
+  -0.0025 / -0.0086 -- a hair negative, inside seed noise. The published "~0.04,
+  about 6% of the total" was the early-stopping schedule in its entirety
+- T4's FACTOR-OF-10 MATCH IS WITHDRAWN. 0.603 vs 0.592 became 0.482 vs 0.639.
+  It should not have been written on the old fits either: 15 of 25 seed pairs,
+  which is the coin flip that §2a's own standard rejects, and x10 was the only
+  one of seven factors where T4 exceeded its control. A crossing point in a
+  monotone row, selected. Now 0 of 25 at all seven. "Energy interpolation is
+  nearly free" and "the model interpolates and does not extrapolate" both go
+- THE TWO PRE-REGISTERED DIRECTIONS SWAPPED. P15.2 was unresolved (arbiter
+  56-68%) and is now 6/6 metrics with the arbiter at a uniform 80%. P15.3 was
+  "survives everything, 96-100%" and now fails RMSE (32%) and MAE (40%) against
+  T3, surviving only on the arbiter (88/76/64%). Neither verdict was stable to
+  a schedule change -- that is the methodological headline, not either verdict
+
+- T1's `x` ATTRIBUTION IS WITHDRAWN. Published as stable 5/5; on the corrected
+  fits it is 4/5, seed 1 picking vy, and the probe's own rule is all-seeds. Same
+  standard that withdrew T5's C from a single seed. `x` is still the leading
+  candidate -- 67% recovered, nothing else above 7%, matching the rigid
+  covariate shift at |z| = 45.3 -- and the probe does not establish it. No fold
+  in Week 15 is attributable now
+- AND THE NULL CONTROL IS GONE. T4's excess over its control was 0.197 decades,
+  below the 0.30 floor, which is why the probe refused to name a direction there
+  and why that refusal was worth reporting. It is now 1.294 decades. No fold
+  sits below the floor, so this run has no negative control. Partial
+  replacement: T4's recoveries are all negative (best -18%) and its argmax is
+  unstable, so nothing spurious was named -- weaker than a pre-specified null
+  and reported as weaker
+
+- Same kwarg mis-mapping found in `probe_divergence.py`, which REFITS models and
+  divides by a control RMSE read from the archive -- so it was comparing
+  patience-50 refits against a patience-150 denominator. Fixed to match
+  mknb15b.py exactly, with a note that the two must move together. Checked every
+  MLPConfig(...) call site in the repo; those were the only two
+- Divergence is worse than published now: T1 predicts to -967 decades on its own
+  held-out far-field rows (was reported as -113, and that figure was over all
+  20,400 rows including T1's training rows), residual sd 107, 89.4% of rows
+  wrong by more than three decades. The central claim is strengthened
+
+**Stuck on / questions:**
+
+- T5 keeps one budget-limited seed at max_epochs=8000 and its RMSE ratio moved
+  7.68 -> 4.22 between the two corrected runs. Orderings held across that move,
+  magnitudes did not. Raising the budget again buys a stabler T5 magnitude and
+  changes no ordering in the results -- do it deliberately or not at all
+- P15.2 now has support under every metric, and it is still a post-hoc
+  comparison standing in for a void pre-registered one. It must never be written
+  as a confirmation
+
+**Next session:**
+
+- Writing

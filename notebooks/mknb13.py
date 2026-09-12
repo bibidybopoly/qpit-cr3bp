@@ -20,7 +20,14 @@ import json
 import os
 import sys
 
-NB_PATH = os.path.join("notebooks", "wk13_mi.ipynb")
+# Resolved against THIS FILE, not the working directory.  With a bare
+# os.path.join("notebooks", ...) the builder only found its own notebook when
+# run from the repo root; run from inside notebooks/ it wrote a NEW
+# notebooks/notebooks/<name>.ipynb instead, which meant the divergence guard
+# below never fired -- the path it checks did not exist, so `--force` was not
+# needed to lose a hand-edit, only a different working directory.
+_HERE = os.path.dirname(os.path.abspath(__file__))
+NB_PATH = os.path.join(_HERE, "wk13_mi.ipynb")
 
 
 def md(text):
@@ -1071,7 +1078,6 @@ def main():
     args = ap.parse_args()
 
     nb = build()
-    os.makedirs(os.path.dirname(NB_PATH), exist_ok=True)
 
     if os.path.exists(NB_PATH) and not args.force:
         with open(NB_PATH) as fh:

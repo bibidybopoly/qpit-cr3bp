@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                 '..', 'src'))
 
 import qpit                                                      # noqa: E402
+import constants as C                                            # noqa: E402
 from qpit import (check_odd, node_angles, wavenumbers,            # noqa: E402
                   rho_from_normalised, rho_to_normalised,
                   dft_matrix, idft_matrix, rotation_operator,
@@ -328,7 +329,7 @@ def test_flatten_round_trips_and_uses_the_documented_index():
 
 def test_pack_and_unpack_round_trip():
     N = 15
-    U, T, rho = band_limited(N), 3.131511429611, 1.842
+    U, T, rho = band_limited(N), C.HALO29_PERIOD, 1.842
     X = pack_X(U, T, rho)
     assert X.shape == (6 * N + 2,)
     U2, T2, r2 = unpack_X(X)

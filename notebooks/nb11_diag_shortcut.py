@@ -100,10 +100,15 @@ def main():
               'size_median', 'n_singleton'):
         print(f"  {k:14s} {c[k]}")
     print(f"  groups/rows    {ratio:.4f}")
-    print(f"  P-D {'HELD -> grouping is VACUOUS, the key needs coarsening'
-                  if ratio > 0.5 else
-                  'falsified -> groups hold several rows; the zero B2 gap is '
-                  'about 1-NN in 9-D, not the key'}")
+    # Kept out of the f-string: a multi-line expression using the same quote
+    # character inside an f-string is PEP 701 and needs Python 3.12+, which
+    # made this one line the only thing in the repo that would not even PARSE
+    # on the 3.11 two notebooks still declared as their kernel.
+    verdict = ('HELD -> grouping is VACUOUS, the key needs coarsening'
+               if ratio > 0.5 else
+               'falsified -> groups hold several rows; the zero B2 gap is '
+               'about 1-NN in 9-D, not the key')
+    print(f"  P-D {verdict}")
 
     # ---- P-B: does C vary within a sheet? ---------------------------------
     print("\n--- H1: where the energy spread comes from")
@@ -179,7 +184,7 @@ def main():
           "      A Week 11 feature change. This is the recommendation.\n"
           "  (c) reproject the offset samples onto the energy manifold and\n"
           "      regenerate. Correct at the source, but it is Week 10 work and\n"
-          "      needs a scope call with Dr. Lang before it starts.")
+          "      needs a scope decision before it starts.")
 
 
 if __name__ == '__main__':

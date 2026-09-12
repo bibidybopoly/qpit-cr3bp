@@ -103,7 +103,7 @@ and cross-energy holdout (Week 15).
 2. *Three seeds*, as a sanity band on whether "the baseline failed" survives
    re-initialisation. The confidence-interval protocol is Week 12.
 3. *Learning curve in*, over group fractions. It is the bias–variance
-   checkpoint made concrete for the dad session.
+   checkpoint made concrete.
 4. *B2 under both splits.* The grouped-vs-random gap is the empirical
    correlation length of the dataset and the evidence that grouping is
    necessary rather than decorative.
@@ -658,8 +658,8 @@ not the same as having less data.
 
 Reading it: a gap between train and test error that persists as data grows is
 variance and more data helps; curves that meet at a high error are bias and
-more data will not. This is the concrete artefact for the bias–variance dad
-session.
+more data will not. This is the concrete artifact for the bias–variance
+checkpoint.
 """.rstrip()))
 
 cells.append(code(r"""
@@ -939,8 +939,8 @@ cells.append(md(r"""
 - Whichever predictions were falsified.
 - Risk 18 is marked **Realized** in the tracker: no resonance-adjacent negatives
   were obtainable. Week 12's "connect high-error regions to resonance proximity"
-  was written before that. Worth raising with Dr. Lang before Week 12 starts
-  rather than discovering it mid-week.
+  was written before that. Worth settling before Week 12 starts rather than
+  discovering it mid-week.
 
 **Still open from Week 10, not Week 11 work:** the project title decision
 (Research Question row 13) needs sign-off *before* the STS abstract is written,

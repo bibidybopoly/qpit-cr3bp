@@ -40,7 +40,6 @@ import os
 
 import numpy as np
 
-from qpit import curve_amplitude
 from torus_probe import probe_gap
 
 from constants import LU                     # re-exported: see constants.py

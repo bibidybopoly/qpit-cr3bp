@@ -46,7 +46,7 @@ import numpy as np
 
 import metrics as MET
 import targets as T
-from models import MLPConfig, train_multi_seed
+from models import train_multi_seed
 
 CELLS = (
     ('M1',  'log10', 'mse'),
@@ -58,7 +58,10 @@ CELLS = (
 FROZEN_BASENAMES = ('results_wk11.json', 'predictions_wk11.npz')
 
 D_MAX_KM = 100.0            # top of the sampler's drawn range
-NEAR_FIELD_KM = 0.125       # dead-zone boundary, measured Week 11
+NEAR_FIELD_KM = 0.125       # dead-zone boundary, measured Week 11.  The
+                            # Week 12 re-measurement is mi.DEAD_ZONE_KM_W12
+                            # = 0.12462; this stays at the Week 11 value
+                            # because the 2x2 was pre-registered against it.
 
 
 # =========================================================================

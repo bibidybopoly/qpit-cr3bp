@@ -339,8 +339,13 @@ def test_max_usable_periods_falls_as_the_torus_gets_more_unstable():
         prev = n
 
 
-def test_default_safety_factor_halves_the_documented_bound():
+def test_default_safety_factor_halves_the_documented_bound_KNOWN_DEFECT():
     """DOCUMENTATION MISMATCH, pinned so it is not mistaken for a bug.
+
+    NAMED `_KNOWN_DEFECT` (2026-09-11).  It was a pin by content but not by
+    name, so `grep -r "KNOWN_DEFECT\|KNOWN_GAP" tests/` missed it and the
+    register in docs/CUTS_AND_DISPOSITIONS.md concluded there was one pin
+    where there are four.  A pin nobody can enumerate is not a pin.
 
     The docstring gives the formula as n_max = log(1/eps)/log(R_u) and then
     says "Measured on the L2 halo family at C ~ 3.15: R_u = 1212, giving

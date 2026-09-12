@@ -23,8 +23,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from qpit import (evaluate_curve, jacobi_constant, mean_jacobi,
-                  node_angles, torus_bundle)
+from qpit import (evaluate_curve, jacobi_constant, node_angles,
+                  torus_bundle)
 
 
 # =========================================================================

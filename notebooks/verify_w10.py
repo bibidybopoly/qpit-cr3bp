@@ -15,11 +15,21 @@ from other stored columns under the SHIPPED `sampling.py`.  If those all agree,
 the archive and the code that claims to have produced it are consistent, which
 is the property a reviewer actually wants and the one that rots silently.
 
-WHAT IT CANNOT CHECK, STATED RATHER THAN IMPLIED.  `d_km` itself, `alpha`,
-`theta`, `gap`, `amplitude_km`, `family_sizes` and `family_max_gap_km` all
-depend on the six densified families and on `torus_field.surface_distance`.
-Re-deriving them means the full rebuild.  This script reports them as unchecked
-rather than passing over them.
+WHAT IT CANNOT CHECK, STATED RATHER THAN IMPLIED.  `alpha`, `theta`, `gap`,
+`amplitude_km`, `family_sizes` and `family_max_gap_km` all depend on how the
+six families were BUILT, and re-deriving them means the full rebuild.  This
+script reports them as unchecked rather than passing over them.
+
+`d_km` USED TO BE ON THAT LIST AND SHOULD NOT HAVE BEEN (2026-09-11).  It needs
+the densified families, but those are shipped, in `data/families/*.npz`, so
+`torus_field.surface_distance` can be re-run on a sample of the stored states
+and the answer compared with the stored label.  That is the single most
+load-bearing column in the archive and it was the one column nothing checked.
+It is checked now, on a sample, with `--full` to do all 20,400 rows.  Measured
+on 250 rows per cell: median relative agreement 1e-11, worst absolute
+disagreement 4e-10 km on measured rows -- 0.4 micrometres, against a floor of
+0.155 m.  Rows at or below the floor disagree by up to 5e-7 km, which is the
+golden-section tolerance on a quantity the floor already declares unresolved.
 
 TWO FINDINGS RECORDED HERE BECAUSE THEY HAVE NOWHERE ELSE TO LIVE.
 
@@ -69,6 +79,9 @@ RECIPE = dict(
 #: Only a full rebuild checks these.
 UNCHECKABLE = ('d_km', 'alpha', 'theta', 'gap', 'amplitude_km', 'd_drawn_km',
                'states', 'family_sizes', 'family_max_gap_km', 'random_dir')
+
+
+FULL = "--full" in sys.argv
 
 
 def main():
@@ -132,6 +145,8 @@ def main():
     print(f"  {'PASS' if passed else 'FAIL'}  family_tags follow the "
           f"(family_id, energy_id) nesting of the build loop")
 
+    ok &= check_labels_against_families(z, n_per_cell=None if FULL else 250)
+
     print("\n=== NOT checked here; only a full rebuild covers these ===")
     print("  " + ", ".join(UNCHECKABLE))
 
@@ -145,6 +160,58 @@ def main():
 
     print(f"\n{'ALL CHECKS PASS' if ok else 'FAILURES ABOVE'}")
     return 0 if ok else 1
+
+
+def check_labels_against_families(z, n_per_cell=250, rtol_measured=1e-5):
+    """Re-run the labeller on stored states and compare with the stored `d_km`.
+
+    THE COLUMN EVERYTHING RESTS ON.  `d_km` is the regression target; every
+    other check in this script is about bookkeeping around it.  It needs the
+    densified families, which is why it sat under "only a full rebuild covers
+    these" -- but the families are shipped in `data/families/`, so this costs
+    seconds per cell rather than hours.
+
+    TOLERANCE, AND WHY IT IS SPLIT.  On measured rows (d >= floor) the two
+    agree to ~1e-11 relative: same code, same families, and the only slack is
+    the golden-section refinement.  Below the floor the relative difference is
+    unbounded and meaningless -- the stored value can be 0.0 -- so those rows
+    are checked in ABSOLUTE km against the floor itself, which is the level at
+    which the project declares the label unresolved.
+    """
+    import numpy as np
+    from densify import load_family
+    from torus_field import surface_distance
+    from constants import LU
+
+    print("\n=== d_km re-derived from data/families/*.npz ===")
+    floor = float(z['floor_km'])
+    rng = np.random.default_rng(0)
+    worst_rel = worst_abs_sub = 0.0
+    ok = True
+    for tag in [str(t) for t in z['family_tags']]:
+        fam, e = tag.split('_')
+        m = (z['family'] == fam) & (z['energy_id'] == int(e[1]))
+        idx = np.flatnonzero(m)
+        if n_per_cell is not None and idx.size > n_per_cell:
+            idx = np.sort(rng.choice(idx, n_per_cell, replace=False))
+        path = os.path.join(_HERE, '..', 'data', 'families', f'{tag}.npz')
+        if not os.path.exists(path):
+            print(f"  SKIP  {tag}: {path} not present")
+            continue
+        d = surface_distance(z['states'][idx], load_family(path))['d'] * LU
+        stored = z['d_km'][idx]
+        meas = stored >= floor
+        rel = (np.abs(d[meas] - stored[meas]) / stored[meas]).max() if meas.any() else 0.0
+        sub = np.abs(d[~meas] - stored[~meas]).max() if (~meas).any() else 0.0
+        passed = rel < rtol_measured and sub < floor
+        ok &= passed
+        worst_rel = max(worst_rel, float(rel))
+        worst_abs_sub = max(worst_abs_sub, float(sub))
+        print(f"  {'PASS' if passed else 'FAIL'}  {tag}  n={idx.size:<5d} "
+              f"max rel (measured) {rel:.2e}   max abs (sub-floor) {sub:.2e} km")
+    print(f"  worst over all cells: {worst_rel:.2e} relative on measured rows, "
+          f"{worst_abs_sub:.2e} km on sub-floor rows (floor {floor:.3e} km)")
+    return ok
 
 
 if __name__ == '__main__':

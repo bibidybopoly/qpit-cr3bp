@@ -121,6 +121,15 @@ def main():
     far = make_windows(z['d_km'], ~z['at_floor'], floor_km=floor,
                        boundary_km=DEAD_ZONE_KM_W12)['far']
 
+    # G15.2: T3/T4/T5 are labelled extrapolation-low / interpolation /
+    # extrapolation-high by energy_id, which is only meaningful if energy_id
+    # is monotone in C.  The pre-registration makes P15.3 VOID if that is not
+    # checked, so it is checked here rather than inherited from a comment.
+    _C_by_eid = [float(np.unique(z['C'][eid == e])[0]) for e in (0, 1, 2)]
+    assert _C_by_eid == sorted(_C_by_eid), (
+        f"G15.2 FAILS: energy_id not monotone in C ({_C_by_eid}); the "
+        "interpolation/extrapolation labels on T3/T4/T5 would be wrong")
+
     folds = {}
     for tag, key, lv in (('T1', fid, 1), ('T2', fid, 0), ('T3', eid, 0),
                          ('T4', eid, 1), ('T5', eid, 2)):

@@ -42,6 +42,21 @@ LU_KM: float = LU
 # Labelling
 # =========================================================================
 
+#: Label-surface INTERPOLATION floor, in km (10 cm).  NOT `FLOOR_KM`.
+#:
+#: Two different floors exist in this project and they are not
+#: interchangeable.  This one is the error of treating the family as an
+#: interpolable surface at the 12.3 km design gap:
+#: `densify.interp_error_km(12.3)` = 1.007e-4 km, rounded to 1e-4.  It is a
+#: property of the family's SPACING and falls as g^2 under densification.
+#: `FLOOR_KM` below is the measured REPRODUCIBILITY floor and does not fall
+#: however finely the family is densified.  `torus_field.label_states` uses
+#: this one; `sampling.label_and_pack`, which produced the shipped dataset,
+#: uses `FLOOR_KM`.  It lived as a bare 1e-4 literal in torus_field.py --
+#: exactly the shape Risk 20 takes, and the more dangerous version of it,
+#: because the two numbers are close enough to look like a typo of each other.
+INTERP_FLOOR_KM: float = 1.0e-4
+
 #: Measured reproducibility floor, in km (0.155 m).
 #:
 #: NOT a tolerance and not a choice: re-deriving a torus by a different route

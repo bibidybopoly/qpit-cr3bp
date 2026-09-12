@@ -9,7 +9,7 @@ from constants import MU_EARTH_MOON          # re-exported: see constants.py
 
 def cr3bp_rhs(t, state, mu):
     """Right-hand side of the planar CR3BP equations of motion.
-    
+
     Parameters
     ----------
     t : float
@@ -148,7 +148,7 @@ def cr3bp_jacobian(state, mu):
     r1_3, r1_5 = r1 ** 3, r1 ** 5
     r2_3, r2_5 = r2 ** 3, r2 ** 5
 
-    # Second derivatives of the effective potential (your hand derivation)
+    # Second derivatives of the effective potential
     Omega_xx = (1
                 - (1 - mu) * (1.0 / r1_3 - 3 * (x + mu) ** 2 / r1_5)
                 - mu * (1.0 / r2_3 - 3 * (x - 1 + mu) ** 2 / r2_5))
@@ -196,7 +196,7 @@ def cr3bp_rhs_with_stm(t, aug_state, mu):
     state = aug_state[:4]
     Phi = aug_state[4:].reshape(4, 4)
 
-    # Derivative of the trajectory (your existing equations of motion)
+    # Derivative of the trajectory
     state_dot = cr3bp_rhs(t, state, mu)
 
     # Derivative of the STM: Phi_dot = A @ Phi

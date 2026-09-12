@@ -86,7 +86,17 @@ __all__ = [
 ]
 
 # Week 12 measured dead-zone boundary in km (124.62 m), from results_wk12.json.
-# Empirical, not physical -- hence here rather than in constants.py. One copy.
+# Empirical, not physical -- hence here rather than in constants.py.
+#
+# NOT THE ONLY COPY, and the other one is deliberately a different number:
+# `ablation.NEAR_FIELD_KM = 0.125` is the WEEK 11 measurement of the same
+# boundary, and Week 12's ablation tables are scored against the number that
+# was current when they were pre-registered.  They agree to 0.3%, which is
+# well inside the 0.21%-wide band of boundaries that select identical rows for
+# the far window and so cannot move a Week 13 or Week 15 count.  Keeping both
+# is right; quietly unifying them would re-score Week 12 against a boundary it
+# did not use.  This comment exists because "One copy" used to sit here and
+# was wrong.
 DEAD_ZONE_KM_W12 = 0.12462
 
 # Below this many rows a joint KSG estimate at dim > ~5 is not credible and the

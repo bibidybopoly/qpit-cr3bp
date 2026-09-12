@@ -29,7 +29,7 @@ failure. See P15.5.
 
 Rationale: with a family held out, its one-hot column is constant-zero across
 every training row, so its first-layer weights receive exactly zero gradient and
-remain at initialisation, while the other column is constant-one and trains as
+remain at initialization, while the other column is constant-one and trains as
 an extra bias. Both flip at test time. The resulting shift is a seed-dependent
 constant unrelated to the dynamics.
 
@@ -225,7 +225,7 @@ key sets are disjoint by construction on the held-out axis, so the overlap is
 exactly zero and the number is vacuous. Dropping the held-out key — passing
 `energy_id` only for a family fold — makes it non-zero, but it then bins
 `alpha_found` and `theta_found` across two different families, and those are
-parameterisation coordinates on a torus, so the same (α, θ) bin on an L1 sheet
+parameterization coordinates on a torus, so the same (α, θ) bin on an L1 sheet
 and an L2 sheet is not the same place in phase space. The number would be
 parameter coincidence, not geometric proximity.
 

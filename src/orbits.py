@@ -150,7 +150,7 @@ def family_tangent(dF, previous_tangent=None):
     """
     # SVD: dF = U @ diag(S) @ Vh.  The null space is the row of Vh
     # corresponding to the smallest singular value (last row).
-    U, S, Vh = np.linalg.svd(dF)
+    Vh = np.linalg.svd(dF)[2]
     tangent = Vh[-1, :]   # last right-singular vector = null space direction
 
     # Normalize to unit length (so steps are measured in true arclength)
@@ -275,7 +275,8 @@ def compute_family_pseudo_arclength(X_start, ds, n_orbits, mu,
         # Compute the tangent (sign-consistent with the previous step)
         tangent = family_tangent(dF, previous_tangent)
 
-        # Bundle this orbit's data together (the stale-variable lesson)
+        # Bundle this orbit's data together in one record, so no caller
+        # can pick up a stale loose variable
         state0 = [X[0], 0.0, 0.0, X[1]]
         orbit = {
             'x0': X[0], 'vy0': X[1], 'T_half': X[2],
@@ -371,7 +372,9 @@ def compute_manifold(state0, period, mu, stable=False, n_points=40,
         integration_time = period
 
     # 1. Get the monodromy matrix and the stable/unstable eigenvector at t=0
-    M, eigvals = monodromy_and_multipliers(state0, period, mu)
+    M, _ = monodromy_and_multipliers(state0, period, mu)
+    # eig rather than the eigvals that call already returned: the eigenVECTOR
+    # is what is transported around the orbit below.
     eigvals_full, eigvecs = np.linalg.eig(M)
     if stable:
         idx = np.argmin(np.abs(eigvals_full))   # |lambda| < 1

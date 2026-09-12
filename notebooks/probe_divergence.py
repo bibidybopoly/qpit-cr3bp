@@ -63,7 +63,15 @@ from mi import make_windows, DEAD_ZONE_KM_W12
 
 ARCH = os.path.join(_HERE, '..', 'data', 'qpit_dataset_w10.npz')
 PRED = os.path.join(_HERE, '..', 'data', 'wk15', 'predictions_wk15.npz')
-CFG = MLPConfig(max_epochs=3000, min_epochs=150, patience=50)
+# SAME CONFIG AS THE FITS THIS PROBE IS EXPLAINING -- it refits models and
+# then divides by a control RMSE read from `predictions_wk15.npz`, so a
+# mismatch here compares a differently-trained model against the archive's
+# denominator.  Corrected 2026-09-11: this line carried the same kwarg
+# mis-mapping as mknb15b.py -- "3000/150/50" is (max_epochs, patience,
+# lr_patience), and writing it as (max_epochs, min_epochs, patience) left
+# patience at 50 and lr_patience at its default 25.  Keep this line identical
+# to mknb15b.py's CFG; if one moves, the other must.
+CFG = MLPConfig(max_epochs=8000, patience=150, lr_patience=50)
 SEEDS = [0, 1, 2, 3, 4]
 
 # T3 FIRST: it is the fold that can still change the write-up.  T3 and T5 are

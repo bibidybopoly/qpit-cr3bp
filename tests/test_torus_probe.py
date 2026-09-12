@@ -20,7 +20,6 @@ from torus_probe import (curve_distance, curve_local_distance,     # noqa: E402
                          regression_target)
 
 N = 31
-from constants import LU             # one definition, project-wide
 
 
 def _curve(seed=0, R=5.0e-4):

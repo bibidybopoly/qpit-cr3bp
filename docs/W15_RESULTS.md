@@ -3,35 +3,75 @@
 Pre-registration: `W15_PREREG.md` (locked before any fit). Eight fits, five
 seeds, one feature set. Gates G15.1, G15.2, G15.3, G15.4, G15.5 all passed.
 
+**THE FITS IN THIS DOCUMENT WERE RE-RUN 2026-09-12.** The originals used
+`patience=50` / `lr_patience=25` against the frozen configuration's 150 / 50 —
+a kwarg mis-mapping in `mknb15b.py`, found in the 2026-09-11 audit and
+confirmed in the archive by an `epochs_run − best_epoch` of exactly 51 on all
+forty fits. The corrected run then hit `max_epochs=3000` on 13 of 40 fits, so
+the budget went to 8000; 1 of 40 is budget-limited now (T5 seed 1, best_epoch
+7978). Every seed that had already converged reproduced its `best_epoch`
+exactly across the two corrected runs, so the numbers below are
+schedule-independent rather than merely self-consistent.
+
+**Two published conclusions did not survive the correction** — the family
+one-hot's R² share (§1) and T4's factor-of-10 match to its control (§2b) — and
+the two pre-registered directions swapped robustness (§2a). The superseded
+numbers are kept beside the current ones throughout rather than removed.
+
 ---
 
 ## 1. What was measured
 
 **In-distribution baseline, and the §1.2 free measurement.** B0 on the reduced
-feature set gives R² = 0.5863 on all 4,035 held-out rows and 0.5912 on the 3,496
-measured rows, against the archive's 0.6269 and 0.6280 for the Week 11/12
-feature set on the same split. **The family one-hot was carrying ≈ 0.04 of R²,
-about 6% of the total.** Same rows, same split, same architecture, same epoch
-budget; the only difference is the two dropped columns.
+feature set gives R² = **0.6294** on all 4,035 held-out rows and **0.6366** on
+the 3,496 measured rows, against the archive's 0.6269 and 0.6280 for the Week
+11/12 feature set on the same split.
 
-**Transfer.** Far-field RMSE in decades of log₁₀ km, on identical rows.
+**The family one-hot carries nothing measurable: −0.0025 and −0.0086** — the
+reduced set is a hair *higher*, inside the seed spread, in the opposite
+direction to the effect that was claimed. The published figure was "≈ 0.04 of
+R², about 6% of the total", and it was the epoch budget in its entirety: under
+the mis-specified schedule B0 scored 0.5863 / 0.5912, and the whole of that
+0.04 closed when the schedule was fixed. Same rows, same split, same
+architecture, and now the same budget; the only difference is the two dropped
+columns, and it does not show up.
 
-| fold | held out | n_far | RMSE transfer | RMSE control | ratio | rows > 3 dex |
-|------|----------|-------|---------------|--------------|-------|--------------|
-| T1 | L2 (train L1) | 923 | 20.193 | 1.430 | 14.12 | 69.3% |
-| T2 | L1 (train L2) | 849 | 9.575 | 1.191 | 8.04 | 51.9% |
-| T3 | E_a (extrap. low) | 625 | 3.325 | 1.258 | 2.64 | 26.1% |
-| T4 | E_b (interpolation) | 574 | 1.348 | 1.139 | 1.18 | 1.6% |
-| T5 | E_c (extrap. high) | 569 | 7.226 | 1.274 | 5.67 | 42.0% |
+**Transfer.** Far-field RMSE in decades of log₁₀ km, on identical rows, mean of
+per-seed on both sides of every ratio.
 
-B0's RMSE on the same rows runs 1.055–1.337, so the matched-n controls sit
-within 0.1–0.3 decades of the full-data baseline. **Sample size is excluded as
-the explanation.** That is what the two extra fits bought.
+| fold | held out | n_far | RMSE transfer | RMSE control | ratio | B0 same rows | rows > 3 dex |
+|------|----------|-------|---------------|--------------|-------|--------------|--------------|
+| T1 | L2 (train L1) | 923 | 98.416 | 1.346 | **73.13** | 1.221 | 89.4% |
+| T2 | L1 (train L2) | 849 | 9.954 | 1.076 | **9.25** | 0.964 | 66.1% |
+| T3 | E_a (extrap. low) | 625 | 2.215 | 1.194 | **1.85** | 1.112 | 17.2% |
+| T4 | E_b (interpolation) | 574 | 2.383 | 1.088 | **2.19** | 1.072 | 14.6% |
+| T5 | E_c (extrap. high) | 569 | 5.082 | 1.206 | **4.22** | 1.142 | 33.6% |
 
-**The failure is divergence, not degradation.** Against a target spanning
-−3.81 to 2.00, T1 predicts between −113.55 and +78.01 with a residual sd of
-12.37 decades. Trimming the worst 1% of rows leaves R² at −420, so this is most
-of the data rather than a tail.
+Published ratios, for comparison: 14.12 / 8.04 / 2.64 / 1.18 / 5.67. Three of
+five moved materially — T1 up 5×, T4 up nearly 2×, T3 down — so the schedule
+was not cancelling between a fold and its control, which is what "every fit ran
+the same configuration" had been taken to imply. The folds gained different
+amounts of validation R² when the budget was fixed (T1 +0.083, T2 +0.069,
+T4 +0.060 against C_energy +0.025), and the ratios moved with them.
+
+B0's RMSE on the same rows runs 0.964–1.221, so the matched-n controls sit
+within 0.1–0.4 decades of the full-data baseline. **Sample size is excluded as
+the explanation.** That is what the two extra fits bought, and it is the one
+part of §1 that neither correction touched.
+
+**The failure is divergence, not degradation.** Against a target spanning −3.81
+to 2.00, T1 predicts between **−967.35 and +62.17** on its held-out far-field
+rows, a worst single error of 967 decades, with a residual sd of 107. 89.4% of
+its rows are wrong by more than three decades. Far-field R² is −21,049 on T1
+and −161 on T2.
+
+> Superseded, and why: earlier drafts gave −113.55 to +78.01 with a residual sd
+> of 12.37. Those came from `diagnose_wk15.py` under the old fits AND used the
+> wrong rows — the range was over all 20,400 archive rows including T1's own
+> training rows, and the sd was seed 0 measured on B0's test rows. The script
+> now labels both scopes. Separately, `rows > 3 dex` was published as seed 0
+> (69.3 / 51.9 / 26.1 / 1.6 / 42.0) while every other column in the same table
+> pooled five seeds; it is all-seed above.
 
 ---
 
@@ -39,24 +79,24 @@ of the data rather than a tail.
 
 | id | disposition | why |
 |----|-------------|-----|
-| P15.1 | **VOID** | Compares two raw R² that are both far below zero (−602, −130). An ordering between two failures is not the ceiling comparison this predicted. |
-| P15.2 | **VOID as locked; UNRESOLVED post-hoc** | Retention uncomputable. The direction is not established under a metric-robustness sweep — see §2a. Do not report it as surviving. |
-| P15.3 | **VOID as locked; direction survives post-hoc, robustly** | T4 beats both extrapolation folds under all six metrics tested and 96–100% of seed combinations. §2a. |
+| P15.1 | **VOID** | Compares two raw R² that are both far below zero (−21,049 and −161). An ordering between two failures is not the ceiling comparison this predicted. |
+| P15.2 | **VOID as locked; direction holds post-hoc, including under the arbiter** | Retention uncomputable. The direction now survives all six metrics, and the arbiter puts it at 80% of seed combinations — above the band §2a calls "not a direction". Upgraded from unresolved on the corrected fits. Still post-hoc. |
+| P15.3 | **VOID as locked; direction holds under the arbiter only** | T4 beats T5 under all six metrics, but beats T3 under only four: RMSE ratio puts it at 32% of seed combinations and MAE at 40%. Ruling 1 gives the arbiter the tie-break, and the arbiter holds at 88 / 76 / 64%. Downgraded from "survives everything, robustly". |
 | P15.4 | CUT before lock | Recorded in `W15_PREREG.md` §4. |
-| P15.5 | **VOID** | Predicted near-field R² inside the −0.133 band; got −598. Strictly outside, but produced by a model emitting hundred-decade predictions everywhere. "The near field is vacuous" cannot be concluded from a diverged model. |
+| P15.5 | **FALSIFIED** | Predicted near-field R² inside the −0.133 band and it is not. The metric computed and came back wrong, so this is a falsification, not a void — §6 ruling 2. What cannot be concluded from a diverged model is the *positive* claim "the near field is vacuous". |
 | P15.6 | VOID on discovery | `gap` is an interval index, not a width; no per-row gap width in the archive. Recorded before the fits ran. |
 
 **Retention is void, and the reason was knowable in advance.** Within-window R²
 is negative by construction — Week 12 measured −0.887 far and −0.133 near
 against 0.628 overall, restricted range, not a bug. Retention was specified as a
 ratio of R² on far-field-only rows, so both numerator and denominator are
-negative for a *well-fitting* model. The five controls came back at −0.87 to
-−2.03, squarely in the Week 12 range. This is a design error in the
+negative for a *well-fitting* model. The five controls came back at −0.65 to
+−1.68, squarely in the Week 12 range. This is a design error in the
 pre-registration, it was avoidable from the handoff alone, and it is recorded as
 such rather than repaired quietly.
 
 The denominator guard is the only reason it surfaced as a refusal rather than a
-number: T1 would otherwise have printed retention = (−602.58)/(−2.03) = 297.
+number: T1 would otherwise have printed retention = (−21,049)/(−1.68) = 12,529.
 
 **RMSE ratio is post-hoc.** The pre-registered *quantity* is void; the
 pre-registered *question* is answerable. Every sentence written from §1 must say
@@ -70,66 +110,83 @@ prediction was confirmed."
 Retention is void, so the reported comparison is post-hoc. The risk is not that
 it is post-hoc but that a metric was *selected* from candidates and the one
 reproducing the pre-registered direction was kept. `notebooks/metric_robustness.py`
-tests that directly: six metrics, direction normalised to a common goodness, and
+tests that directly: six metrics, direction normalized to a common goodness, and
 every ordering evaluated over all 5 × 5 seed combinations rather than a point
 estimate.
 
 | metric | P15.2 (T2 > T1) | 5×5 | P15.3 vs T3 | 5×5 | P15.3 vs T5 | 5×5 |
 |--------|-----------------|-----|-------------|-----|-------------|-----|
-| RMSE ratio | holds | 96% | holds | 100% | holds | 96% |
-| MAE ratio | holds | 88% | holds | 100% | holds | 96% |
-| median &#124;err&#124; ratio | holds | 68% | holds | 96% | holds | 96% |
-| within factor 3 | **FAILS** | 56% | holds | 100% | holds | 100% |
-| within factor 10 | holds | 68% | holds | 100% | holds | 100% |
-| within factor 100 | holds | 68% | holds | 100% | holds | 100% |
+| RMSE ratio | holds | 96% | **FAILS** | 32% | holds | 56% |
+| MAE ratio | holds | 92% | **FAILS** | 40% | holds | 80% |
+| median &#124;err&#124; ratio | holds | 84% | holds | 76% | holds | 88% |
+| within factor 3 | holds | 80% | holds | 88% | holds | 100% |
+| within factor 10 | holds | 80% | holds | 76% | holds | 100% |
+| within factor 100 | holds | 80% | holds | 64% | holds | 96% |
 
-**P15.3 survives everything.** Six of six metrics, 96–100% of seed
-combinations. Interpolation beating extrapolation is not an artefact of the
-metric.
+**The two predictions swapped places.** Under the original fits P15.2 held under
+5 of 6 metrics and failed the arbiter at 56%, and P15.3 held under 6 of 6 at
+96–100%. Under the corrected fits it is the reverse: P15.2 is 6 of 6 with the
+arbiter at a uniform 80%, and P15.3 fails the two tail-sensitive metrics against
+T3. Neither verdict was stable to a training-schedule change, which is the most
+important methodological fact in this section.
 
-**P15.2 does not, and is downgraded to UNRESOLVED.** It flips under
-within-factor-3, and the goodness values there are 0.096 against 0.094 — a tie.
-The seed-combination fractions order themselves by how tail-sensitive the metric
-is: RMSE 96%, MAE 88%, median and the three within-factor metrics 56–68%. T1
-predicts out to −113 and T2 only to −19, so the metrics that separate them most
-strongly are the ones most moved by a handful of extreme predictions. Under the
-**pre-established Week 12 arbiter** — fraction within a factor of N in physical
-km, which no target-space choice can move — the direction sits at 56–68%, which
-is not a direction.
+**P15.2 — "training on the information-rich family transfers better" — now has
+support, and it is still post-hoc.** 80% under the arbiter clears the 56–68%
+band that this section previously called "not a direction". It must be written
+as a direction that survives a post-hoc metric, never as a confirmation, and the
+caveat below applies.
 
-So: "training on the information-rich family transfers better" is **not
-established by Week 15** and must not be written as surviving. The script's own
-instruction applies — report the disagreement, do not pick the metric that
-agrees with the pre-registration.
+**P15.3 — "interpolation beats extrapolation" — survives only on the arbiter.**
+Ruling 1 says the arbiter wins where metrics disagree and it does hold there
+(88 / 76 / 64% against T3), but "survives everything" is no longer true and must
+not be repeated. The RMSE and MAE failures are against T3 specifically; T4 beats
+T5 comfortably on everything.
+
+**The caveat on both.** T5 keeps one budget-limited seed and its RMSE ratio
+moved 7.68 → 4.22 between the two corrected runs. Fold *orderings* were stable
+across that move; T5 *magnitudes* were not. Any sentence about how badly T5
+fails is soft; sentences about where T5 sits relative to T4 are not.
 
 ---
 
-## 2b. The arbiter table, and one positive result inside it
+## 2b. The arbiter table — and the positive result is withdrawn
 
 Fraction of far-field rows predicted within a factor of N, physical km, mean of
 per-seed, transfer over its matched-n control on identical rows.
 
 | fold | ×3 transfer | ×3 control | ×10 transfer | ×10 control | ×100 transfer | ×100 control |
 |------|------------|-----------|-------------|------------|--------------|-------------|
-| T1 | 0.025 | 0.259 | 0.053 | 0.418 | 0.104 | 0.846 |
-| T2 | 0.037 | 0.394 | 0.083 | 0.538 | 0.171 | 0.920 |
-| T3 | 0.226 | 0.423 | 0.395 | 0.554 | 0.641 | 0.872 |
-| **T4** | 0.380 | 0.460 | **0.603** | **0.592** | 0.867 | 0.915 |
-| T5 | 0.096 | 0.391 | 0.236 | 0.526 | 0.526 | 0.881 |
+| T1 | 0.017 | 0.319 | 0.040 | 0.485 | 0.074 | 0.867 |
+| T2 | 0.062 | 0.469 | 0.119 | 0.620 | 0.236 | 0.936 |
+| T3 | 0.190 | 0.473 | 0.361 | 0.604 | 0.650 | 0.888 |
+| T4 | 0.296 | 0.494 | 0.482 | 0.639 | 0.743 | 0.920 |
+| T5 | 0.063 | 0.431 | 0.185 | 0.570 | 0.428 | 0.895 |
 
-**T4 matches its control at the factor-of-10 level** — 0.603 against 0.592,
-goodness 1.019. Holding out the middle energy and testing on it costs
-essentially nothing at that tolerance. That is the one place in Week 15 where
-transfer works, and it belongs in the paper as prominently as the failures: the
-model interpolates across energy and does not extrapolate across anything.
+**"T4 matches its control at the factor-of-10 level" is WITHDRAWN.** It was
+0.603 against 0.592 — a ratio of 1.019, which the previous version of this
+document called "the one place in Week 15 where transfer works" and said
+"belongs in the paper as prominently as the failures". Under the corrected fits
+it is 0.482 against 0.639, a ratio of 0.754.
 
-The controls also restate the Week 12 finding in physical units: even in
-distribution, a far-field prediction lands within a factor of 10 about half the
-time. M1 resolves which decade, not where inside it.
+It should not have been written even then, and the audit flagged it before the
+re-run on evidence already in the old archive: the claim was **15 of 25 seed
+pairs** — a coin flip by the standard §2a uses to call 56–68% "not a direction"
+— and ×10 was the **only one of seven factors** at which T4 exceeded its control
+(×1.3 0.673, ×2 0.740, ×3 0.827, ×5 0.901, ×10 1.019, ×30 0.982, ×100 0.947).
+It was a crossing point in a monotone row, selected.
+
+Under the corrected fits every fold loses to its control at **every** factor,
+and T4 is **0 of 25 seed pairs at all seven** (0.375, 0.504, 0.599, 0.680,
+0.754, 0.782, 0.807). There is no cell left to quote.
+
+The controls restate the Week 12 finding in physical units: even in
+distribution, a far-field prediction lands within a factor of 10 about 58% of
+the time (0.485–0.639 across the five control fits). M1 resolves which decade,
+not where inside it.
 
 ---
 
-## 3. Mechanism: one fold attributable, two not
+## 3. Mechanism: nothing is attributable
 
 Feature-substitution probe, **five seeds**, each input replaced with its
 training median and the model re-scored, `recovered` measured against each
@@ -139,80 +196,93 @@ manipulation — a substituted state component is not a valid state.
 The headline is not the percentage. It is whether the dominant direction is the
 same on every seed.
 
-| fold | excess over control | best feature | recovered | argmax stable |
-|------|--------------------|--------------|-----------|---------------|
-| T1 (family) | 18.429 dec | `x` | 65% ± 23% | **yes**, 5/5 seeds |
-| T3 (energy, E_a) | 1.964 dec | `vz` | 21% ± 9% | no — vz, vz, y, vz, vy |
-| T5 (energy, E_c) | 4.159 dec | `C` | 15% ± 96% | no — C, C, x, C, x |
-| T4 (energy, E_b) | 0.197 dec | — | not reportable | null control refused |
+| fold | excess over control | best feature | recovered | argmax per seed | stable |
+|------|--------------------|--------------|-----------|-----------------|--------|
+| T1 (family) | 97.070 dec | `x` | 67% ± 34% | x, **vy**, x, x, x | **no** |
+| T3 (energy, E_a) | 1.021 dec | `C` | 16% ± 17% | C, y, C, x, vy | no |
+| T5 (energy, E_c) | 3.875 dec | `C` | 10% ± 55% | C, C, x, C, vz | no |
+| T4 (energy, E_b) | 1.294 dec | `vy` | −18% ± 60% | y, C, vy, x, C | no |
 
-**T1 is the one attributable fold.** `x` dominates on all five seeds and no other
-feature exceeds 5%. That matches the support measurement, where T1's worst
-feature is `x` at |z| = 45.3 with `max|z|` equal to `p99|z|` — a rigid covariate
-shift, every held-out row displaced by nearly the same amount, L1 and L2 sitting
-at different `x` in the rotating frame. It recovers 65% of the excess, not all
-of it.
+**T1's attribution is withdrawn.** The previous version reported `x` stable on
+5/5 seeds and called T1 "the one attributable fold". On the corrected fits it is
+4/5 — seed 1 picks `vy` — and the probe's own pre-specified rule is all-seeds:
+*"a direction that moves between seeds is not a mechanism; do not name one in
+the write-up."* This project has already withdrawn one attribution on exactly
+this basis (T5's `C`, from a single seed), and the same standard has to apply
+here.
 
-**The single-seed C attribution for T5 is FALSIFIED.** The one-seed run put `C`
-at 73% and I wrote a mechanism from it. Over five seeds `C` recovers 15% with a
-standard deviation of 96 points, and the dominant direction moves between `C`
-and `x` across seeds. There is no stable direction. **The two-training-levels
-account of T5 has no support and is withdrawn.**
+That said, T1 is not the same kind of negative as the others and the difference
+should be stated rather than flattened: `x` leads on four of five seeds and
+recovers 67%, with nothing else above 7%, and it matches the support
+measurement — T1's worst feature is `x` at |z| = 45.3 with `max|z|` equal to
+`p99|z|`, the signature of a rigid covariate shift, L1 and L2 sitting at
+different `x` in the rotating frame. The honest sentence is that `x` is the
+leading candidate and the probe does not establish it. Not that there is no
+signal, and not that there is a mechanism.
 
-**T3 has no dominant direction either.** Nothing exceeds 21%, and the argmax
-moves across three different features. Substituting `vx` makes T3 substantially
-*worse* (−107% ± 9%), consistently across seeds; I have no account of that and
-am not offering one.
+**T3 and T5 have no dominant direction.** Nothing exceeds 16% on T3 or 10% on
+T5, and both argmaxes move across three features. T3's leading feature also
+changed identity between runs — `vz` under the old fits, `C` now — which is
+itself evidence that nothing there is stable. T5's probe additionally carries
+one non-clean seed and the script flags it unreliable.
 
-**Consequently the deflationary reading of P15.3 is retracted.** The claim that
-interpolation beats extrapolation because `C` has two training levels rested
-entirely on the falsified T5 attribution. P15.3's direction still holds in the
-numbers; there is now no measured mechanism behind it, and none should be
-asserted.
+**The two-training-levels account of T5 stays withdrawn**, and so does the
+deflationary reading of P15.3 that rested on it. `C` is nominally T5's leading
+feature again, at 10% ± 55 points; a number whose standard deviation is five
+times its value is not a revival.
 
-**What survives is a contrast between the two axes.** Family transfer fails
-through one identifiable input direction, stably. Energy transfer fails
-diffusely, with no single input carrying it. That is reportable as an
-observation. It is not an explanation.
+**THE NULL CONTROL IS GONE, and this is the largest hole in §3.** T4's excess
+over its control was 0.197 decades under the old fits — below the 0.30 floor —
+so the probe refused to report a direction there, and the previous version
+correctly said that mattered: *"Had it named one there, nothing else in the run
+would be trustworthy."* T4's excess is now **1.294 decades**, 6.6× larger and
+well above the floor, so **no fold in this run is below the floor and the probe
+has no negative control.** What partially replaces it is that T4's recoveries
+are all negative — substituting any feature makes it worse, best −18% — and its
+argmax is unstable, so the probe still did not name a spurious direction. That
+is weaker than a pre-specified null and must be reported as weaker.
 
-**T5's failure magnitude is itself unstable**: RMSE 5.433 ± 5.326 across seeds,
-a spread as large as the mean. T1 is 19.859 ± 4.086 and T3 is 3.221 ± 0.921.
-Any single-seed statement about T5 is unreliable.
+**Failure magnitudes are unstable where the fits are.** T1 is 98.416 ± 75.289
+across seeds, T5 5.082 ± 5.615, T3 2.215 ± 0.522, T4 2.383 ± 0.695. Any
+single-seed statement about T1 or T5 is unreliable.
 
-**The null control worked.** T4's excess over control is 0.197 decades, below
-the 0.30 floor, and the probe refused to report a direction. Had it named one
-there, nothing else in the run would be trustworthy.
+**What survives.** Transfer fails on both axes, it fails by divergence rather
+than degradation, and no single input direction accounts for it on any fold. The
+published contrast — "family transfer fails through one identifiable input
+direction, stably; energy transfer fails diffusely" — does not survive: both
+axes now fail diffusely, and the family fold differs in magnitude, not in
+attributability.
 
-**An RMSE convention discrepancy to fix before writing.** §1's table uses pooled
-RMSE across seeds and rows; the probe uses the mean of per-seed RMSE, matching
-the project's rule that achieved R² is the mean of per-seed values. The two
-agree closely except on T5, where pooled gives 7.226 and mean-of-per-seed gives
-5.433 — the gap is the seed spread. §1 should be recomputed under the
-mean-of-per-seed convention on both sides of every ratio. The fold orderings
-that P15.2 and P15.3 turn on are unaffected.
+---
 
 ## 4. What the paper can claim
 
 The model does not degrade gracefully outside its training distribution. It
-diverges, by up to 45 decades, across most of the held-out rows, with sample
-size excluded by matched-n controls on identical rows. A screening tool that can
-return a 10⁴⁵ km distance estimate when handed an unfamiliar orbit family is not
-deployable whatever its in-distribution accuracy.
+diverges — up to 967 decades on a single row, with 89% of T1's held-out rows
+wrong by more than three — with sample size excluded by matched-n controls on
+identical rows. A screening tool that can return a 10⁹⁶⁷ km distance estimate
+when handed an unfamiliar orbit family is not deployable whatever its
+in-distribution accuracy.
 
 This strengthens the two-sided central claim rather than complicating it. Week
 13 established that supervised learning screens usefully in distribution and
 cannot seed a solver. Week 15 adds that the screening does not survive a change
-of family, or an extrapolation in energy, and fails loudly enough to be
+of family or an extrapolation in energy, and fails loudly enough to be
 detectable.
 
-**With one exception that should not be buried.** Energy *interpolation* is
-nearly free: T4 matches its matched-n control at the factor-of-10 level (0.603
-against 0.592). The claim is therefore not "transfer fails" but "the model
-interpolates and does not extrapolate" — which is both more accurate and more
-useful to anyone deciding where such a screen could be deployed.
+**There is no exception, and the previous version's exception was wrong.**
+"Energy interpolation is nearly free" and "the model interpolates and does not
+extrapolate" both rested on T4 matching its control at one tolerance, and that
+is withdrawn (§2b). Every fold loses to its control at every factor. What the
+numbers support is an ordering — **energy interpolation degrades least** (ratio
+2.19, ×10 goodness 0.754), then low-energy extrapolation (1.85 / 0.597), then
+high-energy (4.22 / 0.324), then the two family folds (9.25 / 0.192 and 73.13 /
+0.082) — not a regime where transfer is free.
 
-**What Week 15 does NOT establish.** The family asymmetry. P15.2's direction is
-unresolved under the arbiter (§2a) and must not be stated.
+**What Week 15 does NOT establish.** Any mechanism (§3). And the family
+asymmetry, P15.2, is now supported under every metric including the arbiter, but
+it remains a post-hoc comparison standing in for a void pre-registered one, and
+it must be written that way.
 
 ---
 
@@ -220,6 +290,13 @@ unresolved under the arbiter (§2a) and must not be stated.
 
 - Retention, the pre-registered primary metric, was uncomputable; the reported
   comparison is post-hoc RMSE ratio
+- **The archived fits were re-run twice.** The first archive used a
+  mis-specified early-stopping patience; the second hit the epoch budget on 13
+  of 40 fits. The numbers here are from the third run, where 1 of 40 is
+  budget-limited. Two published conclusions did not survive, and both
+  pre-registered directions changed robustness status — so Week 15's verdicts
+  are demonstrably sensitive to the training schedule, and that sensitivity is a
+  finding about the instrument, not only about this run
 - Energy transfer is tested through a feature with two training levels; the
   interpolation/extrapolation contrast is partly a property of that
 - Cross-level folds carry no measured residual-overlap bound
@@ -228,26 +305,63 @@ unresolved under the arbiter (§2a) and must not be stated.
 - L2_E2 max gap 53.66 km against 11.06–12.26 elsewhere, 4.4× the 12.3 km design
   target — reported post-hoc
 - Two families, three energies only
-- Mechanism is attributable for the family fold only; energy-fold divergence
-  has no single-input account, and the two-training-levels explanation was
-  tested and withdrawn
-- T5's failure magnitude varies across seeds by as much as its own size
+- **No fold is mechanistically attributable**, and the probe has no negative
+  control in this run because T4's excess rose above the 0.30-decade floor
+- T1's and T5's failure magnitudes vary across seeds by as much as their own
+  size; T5 additionally keeps one budget-limited seed
 
 ---
 
-## 6. Rulings, settled 2026-09-06
+## 6. Rulings
+
+Settled 2026-09-06:
 
 1. **The arbiter is `factor_table` in physical km** — the pre-established Week 12
    arbiter, not a metric chosen this week. RMSE ratio is reported beside it as
-   the compact summary, and where they disagree the arbiter wins. It disagrees
-   on P15.2, which is why P15.2 is unresolved.
+   the compact summary, and where they disagree the arbiter wins. Under the
+   corrected fits it now disagrees on **P15.3**, not P15.2, and the arbiter
+   carries P15.3.
 2. **P15.5 is falsified, not void.** The metric computed and came back wrong.
    The earlier void call was mine and ran in the flattering direction.
-3. **P15.2 downgraded to unresolved** on the robustness sweep — a ruling the
-   evidence forced rather than one that was open.
+3. ~~P15.2 downgraded to unresolved~~ — **superseded 2026-09-12.** The
+   downgrade was correct on the fits then in hand; on the corrected fits P15.2
+   holds under all six metrics with the arbiter at 80%. Recorded rather than
+   silently reversed: the ruling did not change, the fits did.
 4. `W15_PREREG.md`, `W15_RESULTS.md` and `CUTS_AND_DISPOSITIONS.md` committed to
    `docs/`; log entry appended; tracker at v2_4. Items 5 and 6 closed.
 
-**Still open:** the §1 table uses pooled RMSE where the probe and §2a use mean
-of per-seed. Recompute §1 on both sides before writing. Fold orderings do not
-move; the numbers do.
+Settled 2026-09-11 (audit):
+
+5. §1 recomputed under mean-of-per-seed on both sides. `rows > 3 dex` was seed 0
+   in a table that otherwise pooled five seeds, and two figures in the
+   divergence sentence came from the wrong row set; all corrected, with the old
+   values and their provenance shown.
+6. The `patience` mis-mapping found and fixed in `mknb15b.py`, and the same
+   mis-mapping found and fixed in `probe_divergence.py`, which refits models and
+   would otherwise have compared differently-trained models against the
+   archive's denominator. Those were the only two `MLPConfig(...)` call sites in
+   the repo with the defect.
+7. The saved history now records `config` and `seed`. The defect survived a week
+   because the archive recorded what the fits did and not what they were asked
+   to do.
+
+Settled 2026-09-12 (re-run):
+
+8. **"Every fold ran the same schedule, so within-week comparisons are
+   unaffected" was wrong**, and it was my reasoning on 2026-09-11. A uniform
+   schedule is not an equally converged one: the folds gained different amounts
+   of validation R² when the budget was fixed, so the ratios moved with them.
+   Assume nothing in this week is schedule-independent without a run that shows
+   it.
+9. **Two published conclusions withdrawn**: the family one-hot's ≈0.04 of R²
+   (§1) and T4's factor-of-10 match (§2b). Both were artifacts of the
+   early-stopping schedule; the T4 one was additionally a selected cell and was
+   flagged as such before the re-run.
+10. **T1's `x` attribution withdrawn** (§3), on the probe's own all-seeds rule.
+    The null control is gone with it — no fold is below the 0.30-decade floor
+    any more.
+
+**Open:** nothing blocking. T5 keeps one budget-limited seed at
+`max_epochs=8000`; raising it again would buy a more stable T5 *magnitude* and
+would not change any ordering in this document. Worth one line in the log if it
+is done, not a silent bump.
