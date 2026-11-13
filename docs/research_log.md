@@ -349,7 +349,7 @@
 - 1.65e-10 (L1)
 - 3.95e-08 (near-Earth tangential)
 - 1.50e-11 (near-Moon)
-- The Week 2 gate required ~1e-10; near-Earth and L4 fail, while near-moon and L1 succeed
+- The Week 2 gate required ~1e-10; near-Earth and L1 fail, while near-moon and L4 succeed
 
 
 

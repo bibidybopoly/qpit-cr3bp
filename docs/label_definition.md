@@ -1,6 +1,6 @@
 # Label Definition: Why the Target Is a Distance, Not a Class
 
-**Status:** methods draft, Week 10 (Phase 3). Approved by A. Lang.
+**Status:** methods draft, Week 10 (Phase 3).
 **Supersedes:** the classification framing in the Phase 1 research question.
 **Code:** `src/torus_field.py`, `src/densify.py`, `src/sampling.py`,
 `src/torus_probe.py`. Tests: `tests/test_torus_field.py`,
