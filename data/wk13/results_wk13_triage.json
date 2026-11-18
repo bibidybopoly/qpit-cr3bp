@@ -1,0 +1,110 @@
+{
+  "week": 13,
+  "component": "triage",
+  "seed": 20260827,
+  "p13_0_status": "retired: the MI result settles the benchmark reading more strongly than the eikonal check would have",
+  "recalls": [
+    0.9,
+    0.95,
+    0.99
+  ],
+  "d_ops_km": {
+    "dead-zone boundary": 0.12462,
+    "1 km": 1.0,
+    "10 km": 10.0
+  },
+  "operating_characteristic": {
+    "dead-zone boundary": {
+      "d_op_km": 0.12462,
+      "n_worth": 2289,
+      "frac_worth": 0.5672862453531599,
+      "by_recall": [
+        {
+          "recall": 0.9,
+          "solves_avoided": 0.39137546468401485,
+          "solves_avoided_sd": 0.008079078002877894,
+          "missed_mean": 229.0,
+          "speedup_cap": 1.6430491082335694
+        },
+        {
+          "recall": 0.95,
+          "solves_avoided": 0.341908302354399,
+          "solves_avoided_sd": 0.008220760908401695,
+          "missed_mean": 115.0,
+          "speedup_cap": 1.5195450779543571
+        },
+        {
+          "recall": 0.99,
+          "solves_avoided": 0.29239157372986374,
+          "solves_avoided_sd": 0.0081791896317003,
+          "missed_mean": 23.0,
+          "speedup_cap": 1.4132109834687587
+        }
+      ]
+    },
+    "1 km": {
+      "d_op_km": 1.0,
+      "n_worth": 2815,
+      "frac_worth": 0.6976456009913259,
+      "by_recall": [
+        {
+          "recall": 0.9,
+          "solves_avoided": 0.3434448574969021,
+          "solves_avoided_sd": 0.005878884373421196,
+          "missed_mean": 282.0,
+          "speedup_cap": 1.523101313604107
+        },
+        {
+          "recall": 0.95,
+          "solves_avoided": 0.2962081784386617,
+          "solves_avoided_sd": 0.008472429875513743,
+          "missed_mean": 141.0,
+          "speedup_cap": 1.4208747094865835
+        },
+        {
+          "recall": 0.99,
+          "solves_avoided": 0.236728624535316,
+          "solves_avoided_sd": 0.020111337105670892,
+          "missed_mean": 29.0,
+          "speedup_cap": 1.3101500097408922
+        }
+      ]
+    },
+    "10 km": {
+      "d_op_km": 10.0,
+      "n_worth": 3435,
+      "frac_worth": 0.8513011152416357,
+      "by_recall": [
+        {
+          "recall": 0.9,
+          "solves_avoided": 0.22369268897149935,
+          "solves_avoided_sd": 0.002735143427275615,
+          "missed_mean": 344.0,
+          "speedup_cap": 1.2881496616013282
+        },
+        {
+          "recall": 0.95,
+          "solves_avoided": 0.1697645600991326,
+          "solves_avoided_sd": 0.0015771898465127409,
+          "missed_mean": 172.0,
+          "speedup_cap": 1.2044776119402987
+        },
+        {
+          "recall": 0.99,
+          "solves_avoided": 0.10151177199504338,
+          "solves_avoided_sd": 0.009054501811058067,
+          "missed_mean": 35.0,
+          "speedup_cap": 1.1129806366194075
+        }
+      ]
+    }
+  },
+  "t_infer_sec": 8.540718713509844e-07,
+  "t_solve_sec": null,
+  "note_speedup_cap": "achievable speedup is 1/(1-S), NOT the inference-to-solve ratio; triage decides whether to attempt a solve, it does not replace one",
+  "verdicts": {
+    "P13_4": false,
+    "P13_5": true,
+    "P13_6_useful": true
+  }
+}

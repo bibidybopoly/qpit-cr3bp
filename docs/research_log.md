@@ -1494,6 +1494,17 @@
 
 
 
+**Amended 11-12**
+
+- The two thinned figures in this entry do not match the archive
+- `results_wk13_mi.json` and the saved output of `wk13_mi.ipynb` both give near +0.0046 nats against a null p95 of 0.0204, and far 0.1621 against 0.0405, at n = 2831 per window
+- I can't trace -0.0174 or 0.1565 to any saved output
+- So far magnitude under thinning drops 0.2476 -> 0.1621, not 0.1565
+- Conclusions unchanged: near still inside its null, far still above it
+- The archived values are the ones the paper quotes
+
+
+
 **Next session:**
 
 - Week 15, cross-family transfer, with only 2 families in the archive

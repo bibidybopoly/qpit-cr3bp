@@ -17,11 +17,12 @@ env/
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Data and results — too big for git, regenerate as needed
-data/
+# Results — regenerate as needed. The published data in data/ ARE tracked
+# (about 7 MB, CC BY 4.0; see data/README.md and LICENSE-DATA).
 results/
 *.npy
 *.npz
+!data/**/*.npz
 *.pkl
 *.h5
 *.hdf5

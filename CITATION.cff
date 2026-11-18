@@ -1,0 +1,14 @@
+cff-version: 1.2.0
+message: "If you use this code or data, please cite it as below."
+title: "Distance to quasi-periodic invariant tori in the Earth–Moon CR3BP: code and data"
+authors:
+  - family-names: Lang
+    given-names: Pierce
+version: "1.0.0"
+license: MIT
+repository-code: "https://github.com/bibidybopoly/qpit-cr3bp"
+keywords:
+  - quasi-periodic invariant tori
+  - circular restricted three-body problem
+  - machine learning
+  - astrodynamics

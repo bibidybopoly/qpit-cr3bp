@@ -12,6 +12,10 @@ is written down, and all three are defensible while silence is not.
 `research_log.md`; I have the decision but not the
 day. Do not invent them.
 
+**2026-11-12.** Values left over from the first Week 15 archive (the
+`patience=50` fits) were updated to the corrected fits in §3, §5a, §6 and §7.
+The superseded values are kept beside the current ones.
+
 ---
 
 ## The distinctions this register keeps
@@ -57,9 +61,9 @@ A falsification is a result, not a cut, and belongs in Results. It is listed in
 |------|-----------|-----|
 | **P13.3 leg B** (the Shannon ceiling arm) | Week 13 | The bound has an information-free floor of 1 − N/Var, zero only for a Gaussian target. `log_d_km` is near log-uniform (N/Var 0.6967 against 0.7026 uniform), so the floor sits at 0.303 and the ceiling cannot discriminate below it whatever the MI is |
 | **P15.6** (Risk 19 gap confound) | 2026-09-05, **before the fits ran** | `gap` is an integer interval index 0–62, not a width. The archive carries no per-row gap width — only scalar `target_gap_km` = 12.3 and per-cell `family_max_gap_km`. Recovering one means returning to the torus surfaces, which is new compute |
-| **Retention** — Week 15's pre-registered primary metric | 2026-09-06, after the fits | Specified as a ratio of R² on far-field-only rows. Within-window R² is negative by construction — Week 12 measured −0.887 far, restricted range, not a bug — so both numerator and denominator are negative for a *well-fitting* model. All five controls returned −0.87 to −2.03. **Knowable in advance from the Week 13 handoff; this was a design error, not a discovery** |
-| **P15.1** | 2026-09-06 | Compares two raw R² that are both far below zero (−602, −130). An ordering between two failures is not the ceiling comparison it predicted |
-| ~~**P15.5**~~ | ~~2026-09-06~~ | **MOVED TO §6 — falsified, not void** (ruling 2 of `W15_RESULTS.md` §6, 2026-09-06; this row survived the ruling and was removed 2026-09-11). The metric computed and returned −598 against a predicted −0.133 band. A prediction that is tested and fails is a result |
+| **Retention** — Week 15's pre-registered primary metric | 2026-09-06, after the fits | Specified as a ratio of R² on far-field-only rows. Within-window R² is negative by construction — Week 12 measured −0.887 far, restricted range, not a bug — so both numerator and denominator are negative for a *well-fitting* model. All five controls returned −0.65 to −1.68 on the corrected fits (−0.87 to −2.03 on the first archive). **Knowable in advance from the Week 13 handoff; this was a design error, not a discovery** |
+| **P15.1** | 2026-09-06 | Compares two raw R² that are both far below zero (−21,049 and −161 on the corrected fits; −602 and −130 on the first archive). An ordering between two failures is not the ceiling comparison it predicted |
+| ~~**P15.5**~~ | ~~2026-09-06~~ | **MOVED TO §6 — falsified, not void** (ruling 2 of `W15_RESULTS.md` §6, 2026-09-06; this row survived the ruling and was removed 2026-09-11). The metric computed and returned −20 (T4) to −24,863 (T1) on the corrected fits (−598 on the first archive) against a predicted −0.133 band. A prediction that is tested and fails is a result |
 | **P15.2, P15.3** — *as locked* | 2026-09-06 | Retention uncomputable. **REVISED 2026-09-12 on the corrected fits.** The published note said both directions "survive under post-hoc RMSE ratio"; that is now exactly backwards for one of them. **P15.2** holds under all six metrics with the arbiter at 80% of seed combinations — upgraded from unresolved. **P15.3** now FAILS under RMSE ratio (32%) and MAE (40%) against T3 and survives only on the arbiter (88 / 76 / 64%), where ruling 1 gives it the tie-break — downgraded from "survives everything". Neither direction was stable to a training-schedule change, which is the finding. Both remain post-hoc and must be worded as such |
 
 ## 4. Not applicable — instrument does not fit
@@ -126,7 +130,7 @@ the log-uniform draw. Its far-field share is 0.4895, the lowest of the six
 (range 0.4895–0.5094), which is a 2% relative deficit and the direction the
 defect predicts. L2_E0 sits in the **test** set of T1 and T3, so both carry
 slightly fewer far-field rows than intended. Too small to move an RMSE ratio of
-2.64 or 14.12, and it must still be stated.
+1.85 or 73.13 (2.64 and 14.12 on the first archive), and it must still be stated.
 
 **Disposition: disclose, do not fix.** The fix requires regeneration.
 
@@ -162,7 +166,7 @@ as a confirmation.
 - **The family one-hot's R² share** (Week 15, withdrawn 2026-09-12) — "the family one-hot was carrying ≈ 0.04 of R², about 6% of the total" was the early-stopping schedule in its entirety. On the corrected fits B0 on seven features scores 0.6294 / 0.6366 against the archive's 0.6269 / 0.6280: the one-hot is worth −0.0025 / −0.0086, nothing, slightly negative. **The §1.2 free measurement returns a null**
 - **T4's factor-of-10 match to its control** (Week 15, withdrawn 2026-09-12) — "the one place in Week 15 where transfer works" was 0.603 against 0.592 and is now 0.482 against 0.639. It should not have been written even on the old fits: it was 15 of 25 seed pairs, a coin flip by the standard §2a uses to reject a direction, and ×10 was the only one of seven factors at which T4 exceeded its control. A crossing point in a monotone row, selected. On the corrected fits T4 is 0 of 25 at all seven factors. **"Energy interpolation is nearly free" and "the model interpolates and does not extrapolate" both fall with it**
 - **T1's `x` attribution** (Week 15, withdrawn 2026-09-12) — reported as stable on 5/5 seeds and called "the one attributable fold"; on the corrected fits it is 4/5 and fails the probe's own all-seeds rule. `x` remains the leading candidate (67% recovered, nothing else above 7%, matching the rigid-covariate-shift signature at |z| = 45.3) and the probe does not establish it. **No fold in Week 15 is mechanistically attributable**, and the probe lost its negative control at the same time: T4's excess rose from 0.197 to 1.294 decades, so nothing now sits below the 0.30-decade floor
-- **P15.5** (Week 15, ruled 2026-09-06, filed here 2026-09-11) — predicted near-field transfer R² inside the in-distribution −0.133 band; measured −598. The metric computed and came back wrong. It sat under §3 *Void* until this pass; the earlier void call ran in the flattering direction and the ruling that corrected it is in `W15_RESULTS.md` §6. What a diverged model cannot support is the *positive* reading, "the near field is vacuous" — which is why P15.5 does not become evidence for its own converse
+- **P15.5** (Week 15, ruled 2026-09-06, filed here 2026-09-11) — predicted near-field transfer R² inside the in-distribution −0.133 band; measured −20 (T4) to −24,863 (T1) on the corrected fits (−598 on the first archive). The metric computed and came back wrong. It sat under §3 *Void* until this pass; the earlier void call ran in the flattering direction and the ruling that corrected it is in `W15_RESULTS.md` §6. What a diverged model cannot support is the *positive* reading, "the near field is vacuous" — which is why P15.5 does not become evidence for its own converse
 
 Four of the five are mechanisms that failed while their observations held. That
 pattern is worth one sentence in Discussion.
@@ -193,8 +197,11 @@ The handoff's Limitations list, updated:
 - Cross-level folds carry no measured residual-overlap bound
 - L2_E2 max gap 53.66 km against 11.06–12.26 elsewhere, 4.4× the design target —
   and it is also the smallest cell at 25 tori, which is the same fact
-- Mechanism is attributable for the family fold only; energy-fold divergence has
-  no single-input account
+- No fold is mechanistically attributable. T1's `x` is the leading candidate
+  (67% recovered, 4 of 5 seeds) but fails the probe's all-seeds rule, and the
+  energy folds have no single-input account. *Corrected 2026-11-12: this line
+  said the family fold was attributable, which the 2026-09-12 re-run withdrew
+  (§6).*
 - T5's failure magnitude varies across seeds by as much as its own size
 - `t_solve_sec` measured on halos offset from the dataset energies by up to
   0.09% of C — immaterial for timing, stated for completeness

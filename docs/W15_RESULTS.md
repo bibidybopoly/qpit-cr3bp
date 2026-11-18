@@ -55,9 +55,15 @@ amounts of validation R² when the budget was fixed (T1 +0.083, T2 +0.069,
 T4 +0.060 against C_energy +0.025), and the ratios moved with them.
 
 B0's RMSE on the same rows runs 0.964–1.221, so the matched-n controls sit
-within 0.1–0.4 decades of the full-data baseline. **Sample size is excluded as
-the explanation.** That is what the two extra fits bought, and it is the one
-part of §1 that neither correction touched.
+within 0.02–0.12 decades of it. **Sample size is excluded as the explanation**,
+by the matched-n controls themselves. That is what the two extra fits bought,
+and it is the one part of §1 that neither correction touched.
+
+> Corrected 2026-11-12 (external review of the paper draft): this paragraph said
+> "within 0.1–0.4 decades of the full-data baseline". The differences are
+> 0.125 / 0.112 / 0.082 / 0.016 / 0.064 (T1–T5). B0 is also not "full-data": it
+> trained on the 14,409-row grouped split, and 61–72% of each fold's far-field
+> test rows are in that training set, so its figure is mostly in-sample.
 
 **The failure is divergence, not degradation.** Against a target spanning −3.81
 to 2.00, T1 predicts between **−967.35 and +62.17** on its held-out far-field
