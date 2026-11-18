@@ -1,8 +1,9 @@
 # Distance to Quasi-Periodic Invariant Tori in the Earth–Moon CR3BP
 
 Code and data for the paper *Supervised Learning of Distance to Quasi-Periodic
-Invariant Tori in the Earth–Moon CR3BP: Triage Gains, a Near-Field Information
-Limit, and Divergence Under Transfer* (Pierce Lang, 2026).
+Invariant Tori in the Earth–Moon Circular Restricted Three-Body Problem: Triage,
+a Near-Field Information Limit, and Divergence Under Transfer* (Pierce Lang,
+2026). Archived on Zenodo: <https://doi.org/10.5281/zenodo.24328874>.
 
 ## What this project does
 
@@ -106,7 +107,8 @@ are released under the Creative Commons Attribution 4.0 International License
 
 ## Citation
 
-See `CITATION.cff`.
+See `CITATION.cff`. The archived code and data have the DOI
+[10.5281/zenodo.24328874](https://doi.org/10.5281/zenodo.24328874).
 
 ## Acknowledgments
 

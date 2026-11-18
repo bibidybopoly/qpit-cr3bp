@@ -5,6 +5,7 @@ authors:
   - family-names: Lang
     given-names: Pierce
 version: "1.0.0"
+doi: "10.5281/zenodo.24328874"
 license: MIT
 repository-code: "https://github.com/bibidybopoly/qpit-cr3bp"
 keywords:
